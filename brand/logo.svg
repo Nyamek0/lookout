@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  
+  <defs>
+    <filter id="blur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="26"/></filter>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171717"/><stop offset="1" stop-color="#080808"/></linearGradient>
+  </defs>
+  <g transform="translate(512 512) scale(1.1) translate(-512 -512)">
+  <g>
+    <path d="M 798.9 424.3 A 300 300 0 1 1 599.7 225.1" fill="none" stroke="#e6e6e6" stroke-width="38" stroke-linecap="round"/>
+    <path d="M 322 512 H 432 L 472 512 L 508 412 L 558 612 L 594 512 H 702" fill="none" stroke="#e6e6e6" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.92"/>
+    
+    <circle cx="724.1" cy="299.9" r="44" fill="#3ddc84"/>
+  </g></g>
+</svg>
