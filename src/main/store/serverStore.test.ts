@@ -18,11 +18,12 @@ describe('ServerStore', () => {
 
   it('never writes secrets to disk', () => {
     const file = tmp()
-    new ServerStore(file).add({ ...input, authType: 'password' })
-    const raw = readFileSync(file, 'utf8').toLowerCase()
-    expect(raw).not.toContain('passphrase')
-    expect(raw).not.toContain('"password"')
-    expect(raw).not.toContain('private key')
+    // A caller that slips a secret into the input must not get it persisted.
+    new ServerStore(file).add({ ...input, password: 'hunter2', passphrase: 'abc123' } as never)
+    const raw = readFileSync(file, 'utf8')
+    expect(raw).not.toContain('hunter2')
+    expect(raw).not.toContain('abc123')
+    expect(raw).not.toMatch(/"(password|passphrase|secret)"\s*:/i)
   })
 
   it('removes a server', () => {

@@ -21,7 +21,16 @@ export class ServerStore {
   }
 
   add(input: Omit<ServerConfig, 'id'>): ServerConfig {
-    const server: ServerConfig = { ...input, id: randomUUID() }
+    // Whitelist the fields: anything else (a stray secret) never reaches the disk.
+    const server: ServerConfig = {
+      id: randomUUID(),
+      name: input.name,
+      host: input.host,
+      port: input.port,
+      user: input.user,
+      authType: input.authType,
+      ...(input.keyPath ? { keyPath: input.keyPath } : {})
+    }
     this.servers.push(server)
     this.save()
     return server
