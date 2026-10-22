@@ -29,6 +29,40 @@
     "notDetected": "Not detected",
     "noData": "—"
   },
+  "projects": {
+    "title": "Projects"
+  },
+  "kind": {
+    "compose": "Compose project",
+    "container": "Container",
+    "static": "Static site"
+  },
+  "project": {
+    "restart": "Restart",
+    "logs": "Logs",
+    "disk": "Disk space",
+    "ram": "RAM",
+    "cpu": "CPU",
+    "domains": "Domains",
+    "noDomains": "No domain",
+    "containers": "Containers",
+    "deployment": "Deployment",
+    "repo": "Repository",
+    "branch": "Branch",
+    "commit": "Last commit",
+    "method": "Method",
+    "lastResult": "Last deploy result",
+    "folder": "Folder",
+    "unknown": "unknown",
+    "notFound": "Project not found",
+    "tlsOk": "HTTPS valid · {{days}} days left",
+    "tlsError": "HTTPS: {{error}}",
+    "tlsUnchecked": "HTTPS: not checked",
+    "dnsMismatch": "DNS points to {{ips}}, not to this server",
+    "method_ci-image": "Image built by CI (estimated)",
+    "method_git-pull": "git pull on the server (estimated)",
+    "method_file-copy": "File copy (estimated)"
+  },
   "addServer": {
     "title": "Add a server",
     "fromSshConfig": "From your SSH config",

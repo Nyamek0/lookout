@@ -21,7 +21,7 @@ function installApi(servers: ServerConfig[]) {
 }
 
 describe('app store', () => {
-  beforeEach(() => useAppStore.setState({ servers: [], snapshots: {}, activeId: null }))
+  beforeEach(() => useAppStore.setState({ servers: [], snapshots: {}, activeId: null, projectHistory: {} }))
 
   it('loads servers, selects the first and tells the main process', async () => {
     const api = installApi([server('a'), server('b')])
@@ -43,6 +43,23 @@ describe('app store', () => {
     useAppStore.getState().select('b')
     expect(useAppStore.getState().activeId).toBe('b')
     expect(api.setActive).toHaveBeenLastCalledWith('b')
+  })
+
+  it('keeps a short rolling history of each project to draw its curves', async () => {
+    const api = installApi([server('a')])
+    await useAppStore.getState().init()
+    const withProject = (cpu: number, mem: number): Snapshot => ({
+      ...snap('a', 'ok'),
+      projects: [{
+        id: 'p', name: 'p', kind: 'compose', containerIds: [], domains: [], git: null, deployMethod: 'file-copy',
+        diskBytes: null, usage: { cpuPercent: cpu, memBytes: mem }, status: 'ok'
+      }]
+    })
+    for (let i = 0; i < 70; i++) api.push(withProject(i, i * 10))
+    const h = useAppStore.getState().projectHistory['a:p']!
+    expect(h.cpu).toHaveLength(60)
+    expect(h.cpu.at(-1)).toBe(69)
+    expect(h.mem.at(-1)).toBe(690)
   })
 
   it('works with no server yet', async () => {
