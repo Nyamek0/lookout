@@ -16,8 +16,9 @@ type View = { name: 'overview' } | { name: 'projects' } | { name: 'project'; id:
 
 function Content() {
   const { t } = useTranslation()
-  const { servers, snapshots, activeId, init, select, refreshServers } = useAppStore()
+  const { servers, snapshots, activeId, init, select, refreshServers, removeServer } = useAppStore()
   const [view, setView] = useState<View>({ name: 'overview' })
+  const [removing, setRemoving] = useState(false)
   const [logsFor, setLogsFor] = useState<string | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
   const restart = useRestart(activeId ?? '')
@@ -35,6 +36,14 @@ function Content() {
 
   const entries = servers.map((s) => ({ id: s.id, name: s.name, status: snapshots[s.id]?.status ?? ('neutral' as const) }))
   const snapshot = activeId ? snapshots[activeId] : undefined
+  const activeServer = servers.find((s) => s.id === activeId)
+  // The confirmation names the server and the containers, not only hexadecimal ids.
+  const restartDetail = restart.pending
+    ? `${activeServer?.name ?? ''} · ${(snapshot?.containers ?? [])
+        .filter((c) => restart.pending?.command.split(' ').includes(c.id))
+        .map((c) => c.name)
+        .join(', ')}`
+    : undefined
 
   const choose = (id: string) => {
     select(id)
@@ -87,7 +96,14 @@ function Content() {
           {tab('overview', t('nav.overview'))}
           {tab('projects', t('nav.projects'))}
         </nav>
-        {view.name === 'overview' && <Home snapshot={snapshot} onOpenProject={(id) => setView({ name: 'project', id })} />}
+        {view.name === 'overview' && (
+          <Home
+            snapshot={snapshot}
+            onOpenProject={(id) => setView({ name: 'project', id })}
+            onRetry={() => void window.lookout.monitor.retry(snapshot.serverId)}
+            onRemove={() => setRemoving(true)}
+          />
+        )}
         {view.name === 'projects' && <Projects snapshot={snapshot} onOpen={(id) => setView({ name: 'project', id })} />}
         {view.name === 'project' && (
           <>
@@ -130,9 +146,25 @@ function Content() {
         )}
         {body}
       </Shell>
+      {removing && activeServer && (
+        <ConfirmDialog
+          title={t('server.removeTitle', { name: activeServer.name })}
+          body={t('server.removeBody')}
+          command={`${activeServer.user}@${activeServer.host}:${activeServer.port}`}
+          confirmLabel={t('server.removeConfirm')}
+          cancelLabel={t('restart.cancel')}
+          onConfirm={() => {
+            setRemoving(false)
+            setView({ name: 'overview' })
+            void removeServer(activeServer.id)
+          }}
+          onCancel={() => setRemoving(false)}
+        />
+      )}
       {restart.pending && (
         <ConfirmDialog
           title={restart.pending.label}
+          detail={restartDetail}
           body={t('restart.body')}
           command={restart.pending.command}
           confirmLabel={t('restart.confirm')}

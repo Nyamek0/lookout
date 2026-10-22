@@ -46,6 +46,8 @@ export function ProjectPage({
 
   const containers = snapshot.containers.filter((c) => project.containerIds.includes(c.id))
   const hasContainers = project.containerIds.length > 0
+  // `docker restart` also STARTS stopped containers: leave out finished one-shot jobs (neutral) such as migrations.
+  const restartable = containers.filter((c) => containerStatus(c) !== 'neutral').map((c) => c.id)
   const unknown = t('project.unknown')
   const git = project.git
 
@@ -61,7 +63,12 @@ export function ProjectPage({
         </div>
         {hasContainers && (
           <div className="flex gap-2">
-            <button type="button" onClick={() => onRestart(project.containerIds)} className="rounded-md border border-line px-3 py-1.5 text-sm hover:bg-panel">
+            <button
+              type="button"
+              disabled={restartable.length === 0}
+              onClick={() => onRestart(restartable)}
+              className="rounded-md border border-line px-3 py-1.5 text-sm hover:bg-panel disabled:opacity-40"
+            >
               {t('project.restart')}
             </button>
             <button type="button" onClick={() => onOpenLogs(project.containerIds[0]!)} className="rounded-md border border-line px-3 py-1.5 text-sm hover:bg-panel">

@@ -74,6 +74,33 @@ describe('Home', () => {
     expect(screen.getByText('Server unreachable')).toBeInTheDocument()
   })
 
+  it('explains a refused login, offers a retry and a way to remove the server', async () => {
+    const onRetry = vi.fn()
+    const onRemove = vi.fn()
+    const s = snapshot({
+      reachable: false, host: null, status: 'error',
+      error: { kind: 'auth', message: 'All configured authentication methods failed' }
+    })
+    render(<Home snapshot={s} onOpenProject={() => {}} onRetry={onRetry} onRemove={onRemove} />)
+    expect(screen.getByText(/Sign-in failed/)).toBeInTheDocument()
+    expect(screen.getByText('All configured authentication methods failed')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRetry).toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove server' }))
+    expect(onRemove).toHaveBeenCalled()
+  })
+
+  it('retries network errors by itself: no retry button, but the reason is shown', () => {
+    const s = snapshot({
+      reachable: false, host: null, status: 'error',
+      error: { kind: 'network', message: 'connect ECONNREFUSED 1.2.3.4:22' }
+    })
+    render(<Home snapshot={s} onOpenProject={() => {}} onRetry={() => {}} onRemove={() => {}} />)
+    expect(screen.getByText(/Cannot reach the server/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Remove server' })).toBeInTheDocument()
+  })
+
   it('lists what could not be detected', () => {
     render(<Home snapshot={snapshot({ undetected: ['legacy.example.com → 127.0.0.1:9999'] })} onOpenProject={() => {}} />)
     expect(screen.getByText('legacy.example.com → 127.0.0.1:9999')).toBeInTheDocument()

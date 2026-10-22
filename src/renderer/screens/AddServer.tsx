@@ -134,6 +134,7 @@ export function AddServer({ onDone, onCancel }: { onDone: () => void; onCancel: 
           </label>
         )}
 
+        {user.trim() === 'root' && <p className="text-xs text-dim">{t('addServer.rootNote')}</p>}
         {proxyJump && <p className="text-sm text-warn">{t('addServer.proxyJump')}</p>}
         {error && <p className="text-sm text-bad">{error}</p>}
 

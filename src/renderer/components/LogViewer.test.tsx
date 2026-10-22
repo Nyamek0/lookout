@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LookoutApi } from '../../shared/ipc'
@@ -96,6 +96,24 @@ describe('LogViewer', () => {
     expect(container.firstElementChild).toHaveClass('fixed')
     await userEvent.click(screen.getByRole('button', { name: 'Exit full screen' }))
     expect(onToggle).toHaveBeenCalled()
+  })
+
+  it('tells you when the live stream ended and lets you reconnect', async () => {
+    let end: (reason?: string) => void = () => {}
+    const follow = vi.fn(async (_s: string, _c: string, _cb: (l: string[]) => void, onEnd?: (reason?: string) => void) => {
+      end = onEnd ?? (() => {})
+      return () => {}
+    })
+    ;(window.lookout.logs as unknown as { follow: typeof follow }).follow = follow
+    fetch.mockResolvedValue({ lines: [line(1, 'hello')], oldest: ts(1) })
+    mount()
+    await screen.findByText('hello')
+    await waitFor(() => expect(follow).toHaveBeenCalledTimes(1))
+    act(() => end())
+    expect(await screen.findByText(/Live stream ended/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }))
+    await waitFor(() => expect(follow).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByText(/Live stream ended/)).toBeNull())
   })
 
   it('shows a readable error when logs cannot be read', async () => {

@@ -12,6 +12,7 @@ interface AppState {
   init(): Promise<() => void>
   refreshServers(): Promise<void>
   select(serverId: string): void
+  removeServer(serverId: string): Promise<void>
 }
 
 const push = (values: number[], value: number): number[] => [...values, value].slice(-HISTORY_POINTS)
@@ -47,5 +48,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   select(serverId) {
     set({ activeId: serverId })
     void window.lookout.monitor.setActive(serverId)
+  },
+
+  async removeServer(serverId) {
+    await window.lookout.servers.remove(serverId)
+    await get().refreshServers()
+    set((s) => ({
+      snapshots: Object.fromEntries(Object.entries(s.snapshots).filter(([id]) => id !== serverId)),
+      activeId: s.activeId === serverId ? null : s.activeId
+    }))
+    const next = get().servers[0]
+    if (!get().activeId && next) get().select(next.id)
   }
 }))

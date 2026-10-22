@@ -40,6 +40,8 @@ export function demoHandler(): FakeHandler {
         : ok('abc1234\n2026-10-07T18:02:54+00:00\nfix: demo commit\nHEAD -> main, origin/main\n')
     }
     if (argv[0] === 'docker' && argv[1] === 'restart') return ok(`${argv.slice(2).join('\n')}\n`)
+    // A followed stream never finishes by itself: keep it open and silent, like a quiet container.
+    if (argv[0] === 'docker' && argv[1] === 'logs' && argv.includes('--follow')) return new Promise<never>(() => {})
     if (argv[0] === 'docker' && argv[1] === 'logs') {
       const tail = Number(argv[argv.indexOf('--tail') + 1] ?? 0)
       const older = argv.includes('--until')

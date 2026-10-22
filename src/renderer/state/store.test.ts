@@ -62,6 +62,28 @@ describe('app store', () => {
     expect(h.mem.at(-1)).toBe(690)
   })
 
+  it('removes a server, drops its data and moves to the next one (or to none)', async () => {
+    const api = installApi([server('a'), server('b')])
+    const remove = vi.fn(async (id: string) => {
+      const i = list.findIndex((s) => s.id === id)
+      list.splice(i, 1)
+    })
+    const list = [server('a'), server('b')]
+    window.lookout = {
+      ...window.lookout,
+      servers: { list: async () => [...list], remove }
+    } as unknown as LookoutApi
+    await useAppStore.getState().init()
+    api.push(snap('a', 'ok'))
+    await useAppStore.getState().removeServer('a')
+    expect(remove).toHaveBeenCalledWith('a')
+    expect(useAppStore.getState().servers.map((s) => s.id)).toEqual(['b'])
+    expect(useAppStore.getState().snapshots['a']).toBeUndefined()
+    expect(useAppStore.getState().activeId).toBe('b')
+    await useAppStore.getState().removeServer('b')
+    expect(useAppStore.getState().activeId).toBeNull()
+  })
+
   it('works with no server yet', async () => {
     installApi([])
     await useAppStore.getState().init()

@@ -39,6 +39,25 @@ describe('ProjectPage', () => {
     expect(onOpenLogs).toHaveBeenCalledWith('aaaaaaaaaaaa')
   })
 
+  it('restarts only the containers that are meant to run, never a finished one-shot job', async () => {
+    const onRestart = vi.fn()
+    const cs = [
+      container({ id: 'aaaaaaaaaaaa', name: 'web-1' }),
+      container({ id: 'bbbbbbbbbbbb', name: 'migrate-1', state: 'exited', exitCode: 0, restartPolicy: 'no' }),
+      container({ id: 'cccccccccccc', name: 'worker-1', state: 'exited', exitCode: 1 })
+    ]
+    const p = project({ containerIds: ['aaaaaaaaaaaa', 'bbbbbbbbbbbb', 'cccccccccccc'] })
+    render(<ProjectPage snapshot={snap([p], cs)} projectId="app" onOpenLogs={noop} onRestart={onRestart} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Restart' }))
+    expect(onRestart).toHaveBeenCalledWith(['aaaaaaaaaaaa', 'cccccccccccc'])
+  })
+
+  it('disables Restart when nothing in the project is meant to run', () => {
+    const cs = [container({ id: 'bbbbbbbbbbbb', name: 'migrate-1', state: 'exited', exitCode: 0 })]
+    render(<ProjectPage snapshot={snap([project({ containerIds: ['bbbbbbbbbbbb'] })], cs)} projectId="app" onOpenLogs={noop} onRestart={noop} />)
+    expect(screen.getByRole('button', { name: 'Restart' })).toBeDisabled()
+  })
+
   it('hides containers, logs and restart for a static site', () => {
     const site = project({ id: 'site', name: 'site', kind: 'static', containerIds: [], staticRoot: '/var/www/site', status: 'neutral' })
     render(<ProjectPage snapshot={snap([site], [])} projectId="site" onOpenLogs={noop} onRestart={noop} />)

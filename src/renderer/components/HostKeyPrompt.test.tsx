@@ -96,4 +96,14 @@ describe('HostKeyPrompt', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
+
+  it('lets the user forget a changed key on purpose (after rebuilding the server)', async () => {
+    const forget = vi.fn(async () => {})
+    ;(window.lookout.hostKey as unknown as { forget: typeof forget }).forget = forget
+    render(<HostKeyPrompt />)
+    act(() => pushChanged({ serverId: 's1', expected: 'SHA256:old', actual: 'SHA256:new' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Forget this key' }))
+    expect(forget).toHaveBeenCalledWith('s1')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
 })

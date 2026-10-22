@@ -27,7 +27,21 @@
     "dockerMissing": "Docker is not installed or not running on this server.",
     "proxyUnavailable": "The reverse proxy could not be read: domains are hidden.",
     "notDetected": "Not detected",
-    "noData": "—"
+    "noData": "—",
+    "retry": "Retry",
+    "removeServer": "Remove server",
+    "error": {
+      "auth": "Sign-in failed. Check the user, key or password, then retry.",
+      "hostkeyRefused": "The server's identity was not trusted. Retry to be asked again.",
+      "hostkeyChanged": "The server's identity changed and the connection was blocked.",
+      "network": "Cannot reach the server. Trying again automatically.",
+      "other": "Could not connect to the server."
+    }
+  },
+  "server": {
+    "removeTitle": "Remove {{name}}?",
+    "removeBody": "This only removes the server from the app. Nothing is changed on the server.",
+    "removeConfirm": "Remove"
   },
   "projects": {
     "title": "Projects"
@@ -56,6 +70,8 @@
     "closeFull": "Close",
     "next": "Next match",
     "previous": "Previous match",
+    "ended": "Live stream ended.",
+    "reconnect": "Reconnect",
     "empty": "No log lines yet",
     "none": "No container to read logs from",
     "failed": "Could not read logs: {{message}}"
@@ -108,6 +124,7 @@
     "password": "Password",
     "add": "Add",
     "cancel": "Cancel",
+    "rootNote": "Connecting as root works, but a dedicated user in the docker group is safer.",
     "proxyJump": "ProxyJump is not supported yet for this host.",
     "failed": "Could not add the server: {{message}}"
   },
@@ -115,6 +132,7 @@
     "title": "Trust this server?",
     "body": "First connection to this server. Check that the fingerprint matches before trusting it.",
     "trust": "Trust",
+    "forget": "Forget this key",
     "waiting": "{{count}} more waiting",
     "cancel": "Cancel",
     "changedTitle": "Server identity changed",

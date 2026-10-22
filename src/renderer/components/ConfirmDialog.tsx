@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 /** Asks before touching production, and shows the exact command that will run. */
 export function ConfirmDialog({
   title,
+  detail,
   body,
   command,
   confirmLabel,
@@ -11,6 +12,8 @@ export function ConfirmDialog({
   onCancel
 }: {
   title: string
+  /** What the action is aimed at (server and containers), so the user sees more than hexadecimal ids. */
+  detail?: string
   body: string
   command: string
   confirmLabel: string
@@ -35,6 +38,7 @@ export function ConfirmDialog({
         className="w-full max-w-md rounded-[10px] border border-line bg-panel p-5 text-sm"
       >
         <h2 id="confirm-title" className="mb-2 text-base font-semibold">{title}</h2>
+        {detail && <p className="mb-2 font-medium">{detail}</p>}
         <p className="mb-2 text-dim">{body}</p>
         <code className="mb-4 block break-all rounded border border-line bg-ink p-2">{command}</code>
         <div className="flex justify-end gap-2">

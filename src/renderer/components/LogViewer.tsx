@@ -39,7 +39,7 @@ function highlight(text: string, query: string): ReactNode {
 
 function LogLines({ serverId, containerId, fullscreen }: { serverId: string; containerId: string; fullscreen: boolean }) {
   const { t } = useTranslation()
-  const { lines, loadOlder, canLoadOlder, error } = useLogs(serverId, containerId)
+  const { lines, loadOlder, canLoadOlder, error, streamEnded, reconnect } = useLogs(serverId, containerId)
   const box = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [follow, setFollow] = useState(true)
@@ -139,6 +139,12 @@ function LogLines({ serverId, containerId, fullscreen }: { serverId: string; con
       </div>
 
       {error && <p role="alert" className="text-sm text-bad">{t('logs.failed', { message: error })}</p>}
+      {streamEnded && (
+        <p role="status" className="flex items-center gap-2 text-sm text-warn">
+          {t('logs.ended')}
+          <button type="button" className={btn} onClick={reconnect}>{t('logs.reconnect')}</button>
+        </p>
+      )}
 
       <div
         ref={box}

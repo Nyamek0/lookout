@@ -11,7 +11,9 @@ const line = (n: number) => `${ts(n)} message ${n}`
 let pushLines: (l: string[]) => void = () => {}
 const stopFollow = vi.fn()
 const fetch = vi.fn<(s: string, c: string, o: { tail: number; until?: string }) => Promise<LogChunk>>()
-const follow = vi.fn(async (_s: string, _c: string, cb: (l: string[]) => void) => ((pushLines = cb), stopFollow))
+const follow = vi.fn(
+  async (_s: string, _c: string, cb: (l: string[]) => void, _onEnd?: (reason?: string) => void) => ((pushLines = cb), stopFollow)
+)
 
 beforeEach(() => {
   fetch.mockReset()
@@ -49,6 +51,26 @@ describe('useLogs', () => {
     fetch.mockResolvedValueOnce({ lines: [], oldest: undefined })
     await act(() => result.current.loadOlder())
     expect(result.current.canLoadOlder).toBe(false)
+  })
+
+  it('notices when the live stream ends and reconnects on request', async () => {
+    let end: (reason?: string) => void = () => {}
+    follow.mockImplementation(async (_s, _c, cb, onEnd) => {
+      pushLines = cb
+      end = onEnd ?? (() => {})
+      return stopFollow
+    })
+    fetch.mockResolvedValue({ lines: [line(1)], oldest: ts(1) })
+    const { result } = renderHook(() => useLogs('s1', 'c1'))
+    await waitFor(() => expect(follow).toHaveBeenCalledTimes(1))
+    expect(result.current.streamEnded).toBe(false)
+
+    act(() => end('container stopped'))
+    expect(result.current.streamEnded).toBe(true)
+
+    await act(async () => result.current.reconnect())
+    await waitFor(() => expect(follow).toHaveBeenCalledTimes(2))
+    expect(result.current.streamEnded).toBe(false)
   })
 
   it('reports a read error and stops following on unmount', async () => {

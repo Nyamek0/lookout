@@ -49,6 +49,12 @@ describe('demoHandler', () => {
     expect((await h(['docker', 'restart', 'abc123def456'])).code).toBe(0)
   })
 
+  it('keeps a followed log stream open instead of ending it at once', async () => {
+    const pending = demoHandler()(['docker', 'logs', '--timestamps', '--follow', '--tail', '0', 'abc123def456'])
+    const winner = await Promise.race([pending, new Promise((r) => setTimeout(() => r('still open'), 80))])
+    expect(winner).toBe('still open')
+  })
+
   it('refuses anything it does not know', async () => {
     expect((await demoHandler()(['rm', '-rf', '/'])).code).not.toBe(0)
   })

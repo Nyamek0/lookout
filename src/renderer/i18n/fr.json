@@ -27,7 +27,21 @@
     "dockerMissing": "Docker n'est pas installé ou ne tourne pas sur ce serveur.",
     "proxyUnavailable": "Le reverse proxy n'a pas pu être lu : les domaines sont masqués.",
     "notDetected": "Non détectés",
-    "noData": "—"
+    "noData": "—",
+    "retry": "Réessayer",
+    "removeServer": "Retirer le serveur",
+    "error": {
+      "auth": "Connexion refusée. Vérifiez l'utilisateur, la clé ou le mot de passe, puis réessayez.",
+      "hostkeyRefused": "L'identité du serveur n'a pas été approuvée. Réessayez pour qu'on vous la redemande.",
+      "hostkeyChanged": "L'identité du serveur a changé et la connexion a été bloquée.",
+      "network": "Serveur injoignable. Nouvelle tentative automatique.",
+      "other": "Impossible de se connecter au serveur."
+    }
+  },
+  "server": {
+    "removeTitle": "Retirer {{name}} ?",
+    "removeBody": "Cela retire seulement le serveur de l'application. Rien n'est modifié sur le serveur.",
+    "removeConfirm": "Retirer"
   },
   "projects": {
     "title": "Projets"
@@ -56,6 +70,8 @@
     "closeFull": "Fermer",
     "next": "Résultat suivant",
     "previous": "Résultat précédent",
+    "ended": "Le flux en direct s'est arrêté.",
+    "reconnect": "Se reconnecter",
     "empty": "Pas encore de logs",
     "none": "Aucun conteneur dont lire les logs",
     "failed": "Impossible de lire les logs : {{message}}"
@@ -108,6 +124,7 @@
     "password": "Mot de passe",
     "add": "Ajouter",
     "cancel": "Annuler",
+    "rootNote": "Se connecter en root fonctionne, mais un utilisateur dédié dans le groupe docker est plus sûr.",
     "proxyJump": "ProxyJump n'est pas encore pris en charge pour cet hôte.",
     "failed": "Impossible d'ajouter le serveur : {{message}}"
   },
@@ -115,6 +132,7 @@
     "title": "Faire confiance à ce serveur ?",
     "body": "Première connexion à ce serveur. Vérifiez que l'empreinte correspond avant de lui faire confiance.",
     "trust": "Faire confiance",
+    "forget": "Oublier cette clé",
     "waiting": "{{count}} autre(s) en attente",
     "cancel": "Annuler",
     "changedTitle": "L'identité du serveur a changé",

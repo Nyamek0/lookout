@@ -12,6 +12,8 @@ export function useLogs(serverId: string, containerId: string) {
   const [version, setVersion] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [exhausted, setExhausted] = useState(false)
+  const [streamEnded, setStreamEnded] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const bump = () => setVersion((v) => v + 1)
 
   useEffect(() => {
@@ -19,6 +21,7 @@ export function useLogs(serverId: string, containerId: string) {
     buffer.current = fresh
     setError(null)
     setExhausted(false)
+    setStreamEnded(false)
     bump()
 
     let cancelled = false
@@ -34,11 +37,18 @@ export function useLogs(serverId: string, containerId: string) {
       })
       .then(async () => {
         if (cancelled) return
-        const off = await window.lookout.logs.follow(serverId, containerId, (lines) => {
-          if (cancelled) return
-          fresh.append(lines)
-          bump()
-        })
+        const off = await window.lookout.logs.follow(
+          serverId,
+          containerId,
+          (lines) => {
+            if (cancelled) return
+            fresh.append(lines)
+            bump()
+          },
+          () => {
+            if (!cancelled) setStreamEnded(true)
+          }
+        )
         if (cancelled) off()
         else stop = off
       })
@@ -50,7 +60,9 @@ export function useLogs(serverId: string, containerId: string) {
       cancelled = true
       stop?.()
     }
-  }, [serverId, containerId])
+  }, [serverId, containerId, attempt])
+
+  const reconnect = useCallback(() => setAttempt((a) => a + 1), [])
 
   const loadOlder = useCallback(async () => {
     const first = buffer.current.lines()[0]
@@ -69,5 +81,5 @@ export function useLogs(serverId: string, containerId: string) {
 
   // `version` is the change signal for the mutable buffer
   const lines = useMemo(() => buffer.current.lines(), [version])
-  return { lines, loadOlder, canLoadOlder: !exhausted && buffer.current.canLoadOlder(), error }
+  return { lines, loadOlder, canLoadOlder: !exhausted && buffer.current.canLoadOlder(), error, streamEnded, reconnect }
 }

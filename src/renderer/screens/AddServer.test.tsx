@@ -56,6 +56,17 @@ describe('AddServer', () => {
     })
   })
 
+  it('says that root works but a dedicated user is safer, only for root', async () => {
+    render(<AddServer onDone={() => {}} onCancel={() => {}} />)
+    const user = await screen.findByLabelText('User')
+    expect(screen.queryByText(/dedicated user/i)).toBeNull()
+    await userEvent.type(user, 'root')
+    expect(screen.getByText(/dedicated user/i)).toBeInTheDocument()
+    await userEvent.clear(user)
+    await userEvent.type(user, 'deploy')
+    expect(screen.queryByText(/dedicated user/i)).toBeNull()
+  })
+
   it('blocks a host that needs ProxyJump and says so', async () => {
     render(<AddServer onDone={() => {}} onCancel={() => {}} />)
     await userEvent.click(await screen.findByRole('button', { name: 'inner' }))

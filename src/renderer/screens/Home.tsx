@@ -7,17 +7,56 @@ import { formatGB, formatPercent } from '../format'
 
 const big = 'text-2xl font-semibold'
 
-export function Home({ snapshot, onOpenProject }: { snapshot: Snapshot; onOpenProject: (projectId: string) => void }) {
+const ERROR_KEY = {
+  auth: 'auth',
+  'hostkey-refused': 'hostkeyRefused',
+  'hostkey-changed': 'hostkeyChanged',
+  network: 'network',
+  other: 'other'
+} as const
+
+export function Home({
+  snapshot,
+  onOpenProject,
+  onRetry,
+  onRemove
+}: {
+  snapshot: Snapshot
+  onOpenProject: (projectId: string) => void
+  onRetry?: () => void
+  onRemove?: () => void
+}) {
   const { t } = useTranslation()
-  const { host, warnings } = snapshot
+  const { host, warnings, error } = snapshot
   const diskPercent = host && host.diskTotalBytes ? (host.diskUsedBytes / host.diskTotalBytes) * 100 : 0
   const none = t('home.noData')
+  // Polling pauses on these: the user has to act, so offer the retry here.
+  const waitsForUser = error && error.kind !== 'network' && error.kind !== 'other'
+  const btn = 'rounded-md border border-bad/60 px-2 py-1 text-xs hover:bg-bad/10'
 
   return (
     <div className="flex flex-col gap-5">
       {!snapshot.reachable && (
         <div role="alert" className="rounded-md border border-bad/60 bg-bad/10 px-3 py-2 text-sm text-bad">
-          {t('home.unreachable')}
+          <strong>{t('home.unreachable')}</strong>
+          {error && (
+            <>
+              <p className="mt-1">{t(`home.error.${ERROR_KEY[error.kind]}`)}</p>
+              <p className="mt-1 text-xs opacity-80">{error.message}</p>
+            </>
+          )}
+          <div className="mt-2 flex gap-2">
+            {waitsForUser && onRetry && (
+              <button type="button" className={btn} onClick={onRetry}>
+                {t('home.retry')}
+              </button>
+            )}
+            {onRemove && (
+              <button type="button" className={btn} onClick={onRemove}>
+                {t('home.removeServer')}
+              </button>
+            )}
+          </div>
         </div>
       )}
       {(warnings.includes('permission_denied') || warnings.includes('docker_unavailable')) && (

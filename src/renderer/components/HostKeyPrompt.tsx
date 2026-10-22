@@ -60,7 +60,17 @@ export function HostKeyPrompt({ armDelayMs = 500 }: { armDelayMs?: number }) {
           <code className="mb-2 block break-all">{changed.expected}</code>
           <p className="text-xs text-dim">{t('hostKey.received')}</p>
           <code className="mb-4 block break-all">{changed.actual}</code>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void window.lookout.hostKey.forget(changed.serverId)
+                setChanged(null)
+              }}
+              className="rounded-md border border-bad/60 px-3 py-1.5 text-bad hover:bg-ink"
+            >
+              {t('hostKey.forget')}
+            </button>
             <button type="button" onClick={() => setChanged(null)} className="rounded-md border border-line px-3 py-1.5 hover:bg-ink">
               {t('hostKey.close')}
             </button>
