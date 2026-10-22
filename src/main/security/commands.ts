@@ -83,7 +83,12 @@ const TABLE: Record<CommandName, Builder> = {
     const dir = registeredPath(p.dir, r)
     return p.part === 'remote'
       ? ['git', '-C', dir, 'remote', 'get-url', 'origin']
-      : ['git', '-C', dir, 'log', '-1', '--format=%h%n%cI%n%s%n%D']
+      : [
+          'git', '-C', dir,
+          // The directory comes from server-side labels/config: never let its git config run anything.
+          '-c', 'core.fsmonitor=false', '-c', 'log.showSignature=false', '-c', 'core.pager=cat',
+          'log', '-1', '--no-show-signature', '--format=%h%n%cI%n%s%n%D'
+        ]
   }
 }
 

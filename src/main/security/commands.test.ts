@@ -63,6 +63,15 @@ describe('buildCommand', () => {
     ])
   })
 
+  it('disables config-driven code execution when reading git history', () => {
+    const registry = new PathRegistry()
+    registry.register('/opt/app')
+    expect(buildCommand('gitInfo', { dir: '/opt/app', part: 'head' }, registry)).toEqual([
+      'git', '-C', '/opt/app', '-c', 'core.fsmonitor=false', '-c', 'log.showSignature=false',
+      '-c', 'core.pager=cat', 'log', '-1', '--no-show-signature', '--format=%h%n%cI%n%s%n%D'
+    ])
+  })
+
   it('has fixed read-only commands for host and docker state', () => {
     expect(buildCommand('procStat')).toEqual(['cat', '/proc/stat'])
     expect(buildCommand('dockerPsIds')[0]).toBe('docker')

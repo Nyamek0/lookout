@@ -40,6 +40,7 @@ const GIT_TTL_MS = 300_000
 const DOMAIN_TTL_MS = 600_000
 const DISK_TTL_MS = 60_000
 const HISTORY_POINTS = 60
+const MAX_DOMAINS = 50 // hostnames come from the server's proxy config: bound how many we probe
 
 type DiskInfo = ReturnType<typeof parseDockerSystemDf>
 
@@ -260,7 +261,7 @@ export class ServerMonitor extends EventEmitter {
   }
 
   private async domainsFor(sites: ProxySite[], now: number): Promise<Record<string, DomainCheck>> {
-    const hosts = [...new Set(sites.flatMap((s) => s.hosts))].filter(isCheckableHost)
+    const hosts = [...new Set(sites.flatMap((s) => s.hosts))].filter(isCheckableHost).slice(0, MAX_DOMAINS)
     const stale = hosts.filter((h) => {
       const c = this.domainCache.get(h)
       return !c || now - c.at >= DOMAIN_TTL_MS
