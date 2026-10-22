@@ -27,6 +27,12 @@ describe('containerStatus', () => {
     expect(containerStatus(c({ health: 'unhealthy' }))).toBe('error')
     expect(containerStatus(c({ state: 'restarting' }))).toBe('error')
   })
+  it('flags a container that was created but never started', () => {
+    // e.g. "port is already allocated": docker leaves it in `created` with exit code 128
+    expect(containerStatus(c({ state: 'created', exitCode: 128 }))).toBe('error')
+    expect(containerStatus(c({ state: 'created', exitCode: 0, restartPolicy: 'always' }))).toBe('error')
+    expect(containerStatus(c({ state: 'created', exitCode: 0, restartPolicy: 'no' }))).toBe('neutral')
+  })
   it('is ok when running healthy or without a healthcheck', () => {
     expect(containerStatus(c({ health: 'healthy' }))).toBe('ok')
     expect(containerStatus(c({}))).toBe('ok')

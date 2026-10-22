@@ -26,22 +26,33 @@ const api: LookoutApi = {
   },
   monitor: {
     onSnapshot: (cb) => on<Snapshot>(EVENT_CHANNELS.snapshot, cb),
-    setActive: (serverId) => invoke('monitor:setActive', serverId)
+    setActive: (serverId) => invoke('monitor:setActive', serverId),
+    retry: (serverId) => invoke('monitor:retry', serverId)
   },
   hostKey: {
     onPrompt: (cb) => on<HostKeyPromptInfo>(EVENT_CHANNELS.hostKeyPrompt, cb),
     onChanged: (cb) => on<HostKeyChangedInfo>(EVENT_CHANNELS.hostKeyChanged, cb),
-    answer: (promptId, accept) => invoke('hostKey:answer', promptId, accept)
+    answer: (promptId, accept) => invoke('hostKey:answer', promptId, accept),
+    forget: (serverId) => invoke('hostKey:forget', serverId)
   },
   logs: {
     fetch: (serverId, containerId, opts) => invoke('logs:fetch', serverId, containerId, opts),
-    follow: async (serverId, containerId, cb) => {
-      const subId = await invoke<string>('logs:follow', serverId, containerId)
-      const off = on<{ subId: string; lines: string[] }>(EVENT_CHANNELS.logLines, (p) => {
-        if (p.subId === subId) cb(p.lines)
+    follow: async (serverId, containerId, cb, onEnd) => {
+      // Subscribe before asking, so a line or an end notice that arrives straight away is not missed.
+      let subId: string | null = null
+      const early: { lines?: string[][]; ended?: { reason?: string } } = {}
+      const offLines = on<{ subId: string; lines: string[] }>(EVENT_CHANNELS.logLines, (p) => {
+        if (subId === null) (early.lines ??= []).push(p.lines)
+        else if (p.subId === subId) cb(p.lines)
       })
+      const offEnd = on<{ subId: string; reason?: string }>(EVENT_CHANNELS.logEnded, (p) => {
+        if (subId !== null && p.subId === subId) onEnd?.(p.reason)
+      })
+      subId = await invoke<string>('logs:follow', serverId, containerId)
+      early.lines?.forEach(cb)
       return () => {
-        off()
+        offLines()
+        offEnd()
         void invoke('logs:unfollow', subId)
       }
     }

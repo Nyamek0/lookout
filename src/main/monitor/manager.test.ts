@@ -10,6 +10,10 @@ class FakeMonitor extends EventEmitter {
   active: boolean | null = null
   started = false
   stopped = false
+  retried = 0
+  retry() {
+    this.retried++
+  }
   setActive(a: boolean) {
     this.active = a
   }
@@ -36,6 +40,28 @@ describe('MonitorManager', () => {
     expect(monitors.get('b')!.active).toBe(true)
     manager.stopAll()
     expect(monitors.get('a')!.stopped && monitors.get('b')!.stopped).toBe(true)
+  })
+
+  it('remembers the selected server even if its monitor does not exist yet', () => {
+    const monitors = new Map<string, FakeMonitor>()
+    const manager = new MonitorManager((s) => {
+      const m = new FakeMonitor()
+      monitors.set(s.id, m)
+      return m as unknown as ServerMonitor
+    })
+    manager.setActiveServer('b') // the interface chose before the monitors were started
+    manager.startAll([server('a'), server('b')])
+    expect(monitors.get('b')!.active).toBe(true)
+    expect(monitors.get('a')!.active).toBe(false)
+  })
+
+  it('asks a monitor to retry now', () => {
+    const fake = new FakeMonitor()
+    const manager = new MonitorManager(() => fake as unknown as ServerMonitor)
+    manager.startAll([server('a')])
+    manager.retry('a')
+    manager.retry('nope')
+    expect(fake.retried).toBe(1)
   })
 
   it('forwards snapshots to listeners', () => {

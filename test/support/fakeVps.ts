@@ -85,7 +85,8 @@ export async function startFakeVps(
           const stream = acceptExec()
           void Promise.resolve(handler(parseArgv(info.command))).then((r) => {
             stream.write(r.stdout)
-            stream.exit(r.code)
+            // code -1 simulates a connection that dies before the command reports its exit status.
+            if (r.code >= 0) stream.exit(r.code)
             stream.end()
           })
         })

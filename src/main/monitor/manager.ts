@@ -7,6 +7,7 @@ type Listener = (snapshot: Snapshot) => void
 export class MonitorManager {
   private readonly monitors = new Map<string, ServerMonitor>()
   private readonly listeners = new Set<Listener>()
+  private activeId: string | null = null
 
   constructor(private readonly factory: (server: ServerConfig) => ServerMonitor) {}
 
@@ -24,7 +25,12 @@ export class MonitorManager {
     const monitor = this.factory(server)
     monitor.on('snapshot', (s: Snapshot) => this.listeners.forEach((cb) => cb(s)))
     this.monitors.set(server.id, monitor)
+    monitor.setActive(server.id === this.activeId) // the interface may have chosen before this monitor existed
     monitor.start()
+  }
+
+  retry(serverId: string): void {
+    this.monitors.get(serverId)?.retry()
   }
 
   remove(serverId: string): void {
@@ -37,6 +43,7 @@ export class MonitorManager {
   }
 
   setActiveServer(serverId: string): void {
+    this.activeId = serverId
     for (const [id, monitor] of this.monitors) monitor.setActive(id === serverId)
   }
 

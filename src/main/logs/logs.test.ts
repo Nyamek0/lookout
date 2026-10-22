@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import type { Exec } from '../ssh/connection'
-import { fetchLogs, followLogs } from './logs'
+import { fetchLogs, followLogs, LogFollows } from './logs'
+
+describe('LogFollows', () => {
+  it('stops one, all of a server, or everything', () => {
+    const stopped: string[] = []
+    const follows = new LogFollows()
+    const h = (name: string) => ({ stop: () => stopped.push(name) })
+    follows.add('1', 's1', h('a'))
+    follows.add('2', 's1', h('b'))
+    follows.add('3', 's2', h('c'))
+    follows.stop('1')
+    expect(stopped).toEqual(['a'])
+    follows.stopServer('s1')
+    expect(stopped).toEqual(['a', 'b'])
+    follows.stopAll()
+    expect(stopped).toEqual(['a', 'b', 'c'])
+    follows.stopAll()
+    expect(stopped).toHaveLength(3)
+  })
+})
 
 const ID = 'abcdef123456'
 
@@ -56,7 +75,8 @@ describe('followLogs', () => {
     const exec: Exec = {
       exec: async () => ({ stdout: '', stderr: '', code: 0 }),
       stream: (argv, onData) => {
-        expect(argv.slice(0, 5)).toEqual(['docker', 'logs', '--timestamps', '--tail', '0'])
+        // Without --follow docker prints nothing and exits: the stream would never deliver a line.
+        expect(argv.slice(0, 6)).toEqual(['docker', 'logs', '--timestamps', '--follow', '--tail', '0'])
         expect(argv).toContain('--since')
         push = onData
         return { stop: () => (stopped = true) }

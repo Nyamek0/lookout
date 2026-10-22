@@ -11,6 +11,7 @@ export type { PreparedAction }
 interface Pending {
   serverId: string
   argv: string[]
+  count: number
   expiresAt: number
 }
 
@@ -29,7 +30,7 @@ export class ActionService {
     const argv = buildCommand('dockerRestart', { ids: containerIds }, this.getPaths(serverId))
     const actionId = randomUUID()
     const expiresAt = this.now() + this.ttlMs
-    this.pending.set(actionId, { serverId, argv, expiresAt })
+    this.pending.set(actionId, { serverId, argv, count: containerIds.length, expiresAt })
     return {
       actionId,
       serverId,
@@ -44,7 +45,16 @@ export class ActionService {
     if (!action) throw new Error('unknown or already used action')
     this.pending.delete(actionId)
     if (this.now() > action.expiresAt) throw new Error('action expired')
-    const result = await this.getExec(action.serverId).exec(action.argv)
-    return { ok: result.code === 0, stderr: result.stderr }
+    try {
+      // docker stops containers one after another (10 s grace each): allow for that, and never re-run it.
+      const result = await this.getExec(action.serverId).exec(action.argv, {
+        timeoutMs: 30_000 + 15_000 * action.count,
+        retry: false
+      })
+      return { ok: result.code === 0, stderr: result.stderr }
+    } catch (e) {
+      const why = e instanceof Error ? e.message : String(e)
+      return { ok: false, stderr: `Outcome unknown: ${why}. Check the containers before trying again.` }
+    }
   }
 }

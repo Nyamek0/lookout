@@ -10,13 +10,13 @@ import type {
   SnapshotWarning
 } from '../../shared/types'
 import {
-  ParseError,
   classifyDockerError,
   parseDockerInspect,
   parseDockerStats,
   parseDockerSystemDf
 } from '../collect/docker'
 import { checkDomain, isCheckableHost, type DomainDeps } from '../collect/domains'
+import { classifyConnectError } from '../ssh/errors'
 import { parseGitInfo } from '../collect/git'
 import { cpuPercent, parseDf, parseMeminfo, parseProcStat, parseUptime, type CpuSample } from '../collect/host'
 import { proxyProviders } from '../collect/providers'
@@ -59,6 +59,8 @@ export class ServerMonitor extends EventEmitter {
   private timer: ReturnType<typeof setTimeout> | null = null
   private running = false
   private active = false
+  private failures = 0
+  private paused = false
 
   private serverIp: string
 
@@ -85,7 +87,14 @@ export class ServerMonitor extends EventEmitter {
     if (this.active === active) return
     this.active = active
     // Restart the countdown so a newly selected server refreshes right away at the fast rate.
-    if (this.running) this.schedule(active ? 0 : this.intervals.backgroundMs)
+    if (this.running && !this.paused) this.schedule(active ? 0 : this.intervals.backgroundMs)
+  }
+
+  /** After a failed login or a refused/changed host key polling stops; this tries again now (the user acted). */
+  retry(): void {
+    this.paused = false
+    this.failures = 0
+    if (this.running) this.schedule(0)
   }
 
   /** For servers added by hostname: the address is resolved after the monitor starts. */
@@ -105,20 +114,35 @@ export class ServerMonitor extends EventEmitter {
     if (this.timer) clearTimeout(this.timer)
     this.timer = setTimeout(() => {
       void this.refresh().finally(() => {
-        if (this.running) this.schedule(this.active ? this.intervals.activeMs : this.intervals.backgroundMs)
+        const next = this.nextDelay()
+        if (this.running && next !== null) this.schedule(next)
       })
     }, delayMs)
   }
 
-  private run(name: CommandName, params?: CommandParams): Promise<ExecResult> {
-    return this.o.exec.exec(buildCommand(name, params, this.paths))
+  /** Normal rate when healthy; doubling (up to 5 min) while unreachable; none while waiting for the user. */
+  private nextDelay(): number | null {
+    if (this.paused) return null
+    const base = this.active ? this.intervals.activeMs : this.intervals.backgroundMs
+    if (this.failures === 0) return base
+    return Math.min(base * 2 ** Math.min(this.failures - 1, 6), 300_000)
+  }
+
+  private run(name: CommandName, params?: CommandParams, opts?: { timeoutMs?: number }): Promise<ExecResult> {
+    return this.o.exec.exec(buildCommand(name, params, this.paths), opts)
   }
 
   private async collect(): Promise<Snapshot> {
     let snapshot: Snapshot
     try {
       snapshot = await this.build()
-    } catch {
+      this.failures = 0
+      this.paused = false
+    } catch (e) {
+      const error = classifyConnectError(e)
+      this.failures++
+      // Retrying a refused login every few seconds trips fail2ban and locks the user out: wait for them instead.
+      if (error.kind === 'auth' || error.kind === 'hostkey-refused' || error.kind === 'hostkey-changed') this.paused = true
       snapshot = {
         serverId: this.o.serverId,
         takenAt: Date.now(),
@@ -129,7 +153,8 @@ export class ServerMonitor extends EventEmitter {
         containers: this.last?.containers ?? [],
         undetected: this.last?.undetected ?? [],
         warnings: [],
-        status: 'error'
+        status: 'error',
+        error
       }
     }
     this.last = snapshot
@@ -218,25 +243,25 @@ export class ServerMonitor extends EventEmitter {
     warnings: Set<SnapshotWarning>
   ): Promise<{ containers: ContainerInfo[]; usage: Record<string, ContainerUsage> }> {
     const none = { containers: [] as ContainerInfo[], usage: {} as Record<string, ContainerUsage> }
-    const ps = await this.run('dockerPsIds')
-    if (ps.code !== 0) {
-      warnings.add(classifyDockerError(ps.stderr) ?? 'docker_unavailable')
-      return none
-    }
-    const ids = ps.stdout.split(/\s+/).filter(Boolean)
-    if (ids.length === 0) return none
-    const [inspect, stats] = await Promise.all([this.run('dockerInspect', { ids }), this.run('dockerStats')])
-    if (inspect.code !== 0) {
-      warnings.add(classifyDockerError(inspect.stderr) ?? 'docker_unavailable')
-      return none
-    }
     try {
-      return {
-        containers: parseDockerInspect(inspect.stdout),
-        usage: stats.code === 0 ? parseDockerStats(stats.stdout) : {}
+      const ps = await this.run('dockerPsIds')
+      if (ps.code !== 0) {
+        warnings.add(classifyDockerError(ps.stderr) ?? 'docker_unavailable')
+        return none
       }
-    } catch (e) {
-      if (!(e instanceof ParseError)) throw e
+      const ids = ps.stdout.split(/\s+/).filter(Boolean)
+      if (ids.length === 0) return none
+      const [inspect, stats] = await Promise.all([this.run('dockerInspect', { ids }), this.run('dockerStats')])
+      if (inspect.code !== 0) {
+        warnings.add(classifyDockerError(inspect.stderr) ?? 'docker_unavailable')
+        return none
+      }
+      const containers = parseDockerInspect(inspect.stdout)
+      // docker listed containers but we could read none of them: say so rather than show an empty, green server
+      if (containers.length === 0) warnings.add('docker_unavailable')
+      return { containers, usage: stats.code === 0 ? parseDockerStats(stats.stdout) : {} }
+    } catch {
+      // a hung or garbled docker must not make the whole server look unreachable: the host metrics are fine
       warnings.add('docker_unavailable')
       return none
     }
@@ -246,10 +271,14 @@ export class ServerMonitor extends EventEmitter {
     const sites: ProxySite[] = []
     let anyAvailable = false
     for (const provider of this.providers) {
-      const r = await provider.detect({ exec: this.o.exec, paths: this.paths })
-      if (r.available) {
-        anyAvailable = true
-        sites.push(...r.sites)
+      try {
+        const r = await provider.detect({ exec: this.o.exec, paths: this.paths })
+        if (r.available) {
+          anyAvailable = true
+          sites.push(...r.sites)
+        }
+      } catch {
+        // one unreadable proxy must not hide the others
       }
     }
     if (!anyAvailable) warnings.add('proxy_unavailable')
@@ -259,11 +288,15 @@ export class ServerMonitor extends EventEmitter {
   private async gitFor(dir: string, now: number): Promise<GitInfo | null> {
     const cached = this.gitCache.get(dir)
     if (cached && now - cached.at < GIT_TTL_MS) return cached.info
-    const head = await this.run('gitInfo', { dir, part: 'head' })
     let info: GitInfo | null = null
-    if (head.code === 0 && head.stdout.trim()) {
-      const remote = await this.run('gitInfo', { dir, part: 'remote' })
-      info = parseGitInfo(head.stdout, remote.code === 0 ? remote.stdout : '')
+    try {
+      const head = await this.run('gitInfo', { dir, part: 'head' }, { timeoutMs: 10_000 })
+      if (head.code === 0 && head.stdout.trim()) {
+        const remote = await this.run('gitInfo', { dir, part: 'remote' }, { timeoutMs: 10_000 })
+        info = parseGitInfo(head.stdout, remote.code === 0 ? remote.stdout : '')
+      }
+    } catch {
+      info = null // a slow or broken checkout: remember the failure so it is not retried every cycle
     }
     this.gitCache.set(dir, { at: now, info })
     return info
@@ -285,8 +318,14 @@ export class ServerMonitor extends EventEmitter {
 
   private async diskUsage(now: number): Promise<DiskInfo> {
     if (this.diskCache && now - this.diskCache.at < DISK_TTL_MS) return this.diskCache.value
-    const r = await this.run('dockerSystemDf')
-    const value = r.code === 0 ? parseDockerSystemDf(r.stdout) : { volumes: {}, images: {} }
+    let value: DiskInfo = { volumes: {}, images: {} }
+    try {
+      // walks every volume: can be slow on big hosts, so it gets its own limit and a failure is cached too
+      const r = await this.run('dockerSystemDf', undefined, { timeoutMs: 20_000 })
+      if (r.code === 0) value = parseDockerSystemDf(r.stdout)
+    } catch {
+      // keep the empty value
+    }
     this.diskCache = { at: now, value }
     return value
   }

@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '../shared/ipc'
 import type { ServerConfig } from '../shared/types'
 import { ActionService } from './actions/actions'
-import { createHandlers, type IpcServices } from './ipc'
+import { createHandlers, registerIpc, type IpcServices } from './ipc'
+import { LogFollows } from './logs/logs'
 import { PathRegistry } from './security/pathRegistry'
 import type { Exec } from './ssh/connection'
 import { HostKeyPrompter } from './ssh/prompter'
@@ -22,6 +23,9 @@ function setup(over: Partial<IpcServices> = {}) {
   const active: string[] = []
   const events: { channel: string; payload: unknown }[] = []
   const stops: string[] = []
+  const retried: string[] = []
+  const forgotten: string[] = []
+  const follows = new LogFollows()
   const exec: Exec = {
     exec: async () => ({ stdout: '2026-10-21T10:00:01.000000000Z hello\n', stderr: '', code: 0 }),
     stream: () => ({ stop: () => stops.push('stopped') })
@@ -32,8 +36,11 @@ function setup(over: Partial<IpcServices> = {}) {
     manager: {
       add: (s) => added.push(s),
       remove: (id) => removed.push(id),
-      setActiveServer: (id) => active.push(id)
+      setActiveServer: (id) => active.push(id),
+      retry: (id) => retried.push(id)
     },
+    follows,
+    forgetHostKey: (id) => forgotten.push(id),
     actions: new ActionService(() => exec, () => new PathRegistry()),
     execFor: () => exec,
     readSshConfig: () => ({ text: 'Host vps\n  HostName 1.2.3.4\n  User root\n' }),
@@ -42,7 +49,7 @@ function setup(over: Partial<IpcServices> = {}) {
     emit: (channel, payload) => events.push({ channel, payload }),
     ...over
   }
-  return { handlers: createHandlers(services), services, secrets, file, added, removed, active, events, stops }
+  return { handlers: createHandlers(services), services, secrets, file, added, removed, active, events, stops, retried, forgotten, follows }
 }
 
 describe('ipc handlers', () => {
@@ -73,6 +80,39 @@ describe('ipc handlers', () => {
   it('imports hosts from ssh config', async () => {
     const hosts = (await setup().handlers['servers:importSshConfig']!()) as { alias: string }[]
     expect(hosts.map((h) => h.alias)).toEqual(['vps'])
+  })
+
+  it('lets the user retry a server and forget a pinned host key', async () => {
+    const { handlers, retried, forgotten } = setup()
+    await handlers['monitor:retry']!('s1')
+    await handlers['hostKey:forget']!('s1')
+    expect(retried).toEqual(['s1'])
+    expect(forgotten).toEqual(['s1'])
+  })
+
+  it('closes the live logs and forgets the pinned key of a server that is removed', async () => {
+    const stopped: string[] = []
+    const { handlers, forgotten, follows } = setup()
+    follows.add('sub-1', 'gone', { stop: () => stopped.push('gone') })
+    follows.add('sub-2', 'kept', { stop: () => stopped.push('kept') })
+    await handlers['servers:remove']!('gone')
+    expect(stopped).toEqual(['gone'])
+    expect(forgotten).toEqual(['gone'])
+  })
+
+  it('tells the renderer when a live log stream ends on its own', async () => {
+    let end: (reason?: string) => void = () => {}
+    const exec: Exec = {
+      exec: async () => ({ stdout: '', stderr: '', code: 0 }),
+      stream: (_argv, _onData, onEnd) => {
+        end = onEnd ?? (() => {})
+        return { stop() {} }
+      }
+    }
+    const { handlers, events } = setup({ execFor: () => exec })
+    const subId = (await handlers['logs:follow']!('s1', ID)) as string
+    end('container stopped')
+    expect(events).toContainEqual({ channel: EVENT_CHANNELS.logEnded, payload: { subId, reason: 'container stopped' } })
   })
 
   it('selects the active server', async () => {
@@ -120,6 +160,20 @@ describe('ipc handlers', () => {
     expect(events).toContainEqual({ channel: EVENT_CHANNELS.logLines, payload: { subId, lines: ['line one'] } })
     await handlers['logs:unfollow']!(subId)
     expect(stops).toEqual(['x'])
+  })
+})
+
+describe('registerIpc', () => {
+  it('answers only the app page: any other sender is refused', async () => {
+    const registered = new Map<string, (event: unknown, ...args: unknown[]) => unknown>()
+    const { handlers } = setup()
+    registerIpc({ handle: (channel, fn) => void registered.set(channel, fn as never) }, handlers, (url) => url === 'app://ok/')
+    expect([...registered.keys()].sort()).toEqual([...INVOKE_CHANNELS].sort())
+
+    const list = registered.get('servers:list')!
+    await expect(list({ senderFrame: { url: 'https://evil.example/' } })).rejects.toThrow(/untrusted/i)
+    await expect(list({ senderFrame: undefined })).rejects.toThrow(/untrusted/i)
+    await expect(list({ senderFrame: { url: 'app://ok/' } })).resolves.toEqual([])
   })
 })
 

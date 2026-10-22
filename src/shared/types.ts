@@ -99,6 +99,9 @@ export interface ServerConfig {
   keyPath?: string
 }
 
+/** Why a server could not be reached: it decides whether we keep retrying or wait for the user. */
+export type ConnectErrorKind = 'auth' | 'hostkey-refused' | 'hostkey-changed' | 'network' | 'other'
+
 export type SnapshotWarning = 'docker_unavailable' | 'proxy_unavailable' | 'permission_denied'
 
 export interface Snapshot {
@@ -112,4 +115,6 @@ export interface Snapshot {
   undetected: string[]
   warnings: SnapshotWarning[]
   status: Status
+  /** Set when the server is unreachable: what went wrong, in the library's own words. */
+  error?: { kind: ConnectErrorKind; message: string }
 }

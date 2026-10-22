@@ -15,6 +15,9 @@ export function containerStatus(c: ContainerInfo): Status {
       return c.restartPolicy === 'always' || c.restartPolicy === 'unless-stopped' ? 'error' : 'neutral'
     case 'paused':
       return 'warn'
+    case 'created':
+      // never started (e.g. "port is already allocated" leaves exit code 128): that is a failed start
+      return c.exitCode !== 0 || c.restartPolicy === 'always' || c.restartPolicy === 'unless-stopped' ? 'error' : 'neutral'
     default:
       return 'neutral'
   }

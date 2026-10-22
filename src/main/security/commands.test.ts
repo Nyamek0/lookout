@@ -54,6 +54,15 @@ describe('buildCommand', () => {
     expect(() => buildCommand('dockerLogs', { id: 'abcdef123456', tail: 10, until: '$(id)' })).toThrow()
   })
 
+  it('can follow a container log live, only with --follow', () => {
+    expect(
+      buildCommand('dockerLogs', { id: 'abcdef123456', tail: 0, since: '2026-10-21T10:00:00.000Z', follow: true })
+    ).toEqual([
+      'docker', 'logs', '--timestamps', '--follow', '--tail', '0', '--since', '2026-10-21T10:00:00.000Z', 'abcdef123456'
+    ])
+    expect(buildCommand('dockerLogs', { id: 'abcdef123456', tail: 5 })).not.toContain('--follow')
+  })
+
   it('queries git only inside a registered directory', () => {
     const registry = new PathRegistry()
     expect(() => buildCommand('gitInfo', { dir: '/opt/app', part: 'head' }, registry)).toThrow()

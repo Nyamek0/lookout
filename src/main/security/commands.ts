@@ -26,6 +26,8 @@ export interface CommandParams {
   tail?: number
   until?: string
   since?: string
+  /** Keep the command running and print new lines as they are written (needs --follow, or docker exits at once). */
+  follow?: boolean
 }
 
 type Builder = (p: CommandParams, registry: PathRegistry) => string[]
@@ -71,7 +73,7 @@ const TABLE: Record<CommandName, Builder> = {
     if (tail === undefined || !Number.isInteger(tail) || tail < 0 || tail > 1_000_000) {
       throw new Error(`invalid tail: ${String(tail)}`)
     }
-    const argv = ['docker', 'logs', '--timestamps', '--tail', String(tail)]
+    const argv = ['docker', 'logs', '--timestamps', ...(p.follow ? ['--follow'] : []), '--tail', String(tail)]
     if (p.until) argv.push('--until', timestamp(p.until))
     if (p.since) argv.push('--since', timestamp(p.since))
     argv.push(containerId(p.id))

@@ -3,7 +3,7 @@ import type { IpcMain } from 'electron'
 import { EVENT_CHANNELS, INVOKE_CHANNELS, type InvokeChannel, type NewServerInput } from '../shared/ipc'
 import type { ServerConfig } from '../shared/types'
 import type { ActionService } from './actions/actions'
-import { fetchLogs, followLogs } from './logs/logs'
+import { fetchLogs, followLogs, type LogFollows } from './logs/logs'
 import type { Exec } from './ssh/connection'
 import type { HostKeyPrompter } from './ssh/prompter'
 import { parseSshConfig } from './ssh/sshConfig'
@@ -13,7 +13,16 @@ import type { ServerStore } from './store/serverStore'
 export interface IpcServices {
   serverStore: ServerStore
   secrets: SecretStore
-  manager: { add(server: ServerConfig): void; remove(serverId: string): void; setActiveServer(serverId: string): void }
+  manager: {
+    add(server: ServerConfig): void
+    remove(serverId: string): void
+    setActiveServer(serverId: string): void
+    retry(serverId: string): void
+  }
+  /** Open live log subscriptions, closed when their server goes away or the window reloads. */
+  follows: LogFollows
+  /** Drops the pinned host key of a server so the next connection asks the user again. */
+  forgetHostKey(serverId: string): void
   actions: ActionService
   execFor(serverId: string): Exec
   readSshConfig(): { text: string; include?: (pattern: string) => string[] }
@@ -52,8 +61,6 @@ function newServer(v: unknown): NewServerInput {
 }
 
 export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
-  const follows = new Map<string, { stop(): void }>()
-
   return {
     'servers:list': async () => s.serverStore.list(),
     'servers:add': async (input) => {
@@ -66,6 +73,8 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
     'servers:remove': async (id) => {
       const serverId = str(id, 'id')
       s.manager.remove(serverId)
+      s.follows.stopServer(serverId)
+      s.forgetHostKey(serverId) // while the server is still in the store, so its address can be found
       s.serverStore.remove(serverId)
       await s.secrets.delete(serverId)
     },
@@ -74,7 +83,9 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
       return parseSshConfig(text, include)
     },
     'monitor:setActive': async (id) => s.manager.setActiveServer(str(id, 'serverId')),
+    'monitor:retry': async (id) => s.manager.retry(str(id, 'serverId')),
     'hostKey:answer': async (promptId, accept) => s.prompter.answer(str(promptId, 'promptId'), accept === true),
+    'hostKey:forget': async (id) => s.forgetHostKey(str(id, 'serverId')),
     'logs:fetch': async (serverId, containerId, opts) => {
       const o = (opts ?? {}) as { tail?: unknown; until?: unknown }
       if (typeof o.tail !== 'number') throw new TypeError('tail must be a number')
@@ -84,18 +95,21 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
       })
     },
     'logs:follow': async (serverId, containerId) => {
+      const server = str(serverId, 'serverId')
       const subId = randomUUID()
-      const handle = followLogs(s.execFor(str(serverId, 'serverId')), str(containerId, 'containerId'), (lines) =>
-        s.emit(EVENT_CHANNELS.logLines, { subId, lines })
+      const handle = followLogs(
+        s.execFor(server),
+        str(containerId, 'containerId'),
+        (lines) => s.emit(EVENT_CHANNELS.logLines, { subId, lines }),
+        (reason) => {
+          s.follows.stop(subId)
+          s.emit(EVENT_CHANNELS.logEnded, { subId, reason })
+        }
       )
-      follows.set(subId, handle)
+      s.follows.add(subId, server, handle)
       return subId
     },
-    'logs:unfollow': async (subId) => {
-      const id = str(subId, 'subId')
-      follows.get(id)?.stop()
-      follows.delete(id)
-    },
+    'logs:unfollow': async (subId) => s.follows.stop(str(subId, 'subId')),
     'actions:prepareRestart': async (serverId, ids) =>
       s.actions.prepareRestart(str(serverId, 'serverId'), strings(ids, 'containerIds')),
     'actions:confirm': async (actionId) => {
@@ -110,6 +124,16 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
   }
 }
 
-export function registerIpc(ipcMain: Pick<IpcMain, 'handle'>, handlers: Record<InvokeChannel, Handler>): void {
-  for (const channel of INVOKE_CHANNELS) ipcMain.handle(channel, (_event, ...args) => handlers[channel](...args))
+/** Every call must come from the app's own page: a page the window was tricked into showing gets nothing. */
+export function registerIpc(
+  ipcMain: Pick<IpcMain, 'handle'>,
+  handlers: Record<InvokeChannel, Handler>,
+  isTrusted: (url: string | undefined) => boolean
+): void {
+  for (const channel of INVOKE_CHANNELS) {
+    ipcMain.handle(channel, async (event, ...args) => {
+      if (!isTrusted(event.senderFrame?.url)) throw new Error('untrusted sender')
+      return handlers[channel](...args)
+    })
+  }
 }

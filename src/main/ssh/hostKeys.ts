@@ -32,6 +32,15 @@ export class KnownHosts {
 
   set(id: string, fingerprint: string): void {
     this.map.set(id, fingerprint)
+    this.save()
+  }
+
+  /** Forget a pinned key (after a legitimate server rebuild): the next connection asks the user again. */
+  delete(id: string): void {
+    if (this.map.delete(id)) this.save()
+  }
+
+  private save(): void {
     if (this.file) writeFileSync(this.file, JSON.stringify(Object.fromEntries(this.map), null, 2))
   }
 }

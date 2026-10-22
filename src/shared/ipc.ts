@@ -30,15 +30,24 @@ export interface LookoutApi {
   monitor: {
     onSnapshot(cb: (snapshot: Snapshot) => void): Unsubscribe
     setActive(serverId: string): Promise<void>
+    /** Polling pauses after a failed login or a refused/changed host key: this resumes it now. */
+    retry(serverId: string): Promise<void>
   }
   hostKey: {
     onPrompt(cb: (prompt: HostKeyPromptInfo) => void): Unsubscribe
     onChanged(cb: (info: HostKeyChangedInfo) => void): Unsubscribe
     answer(promptId: string, accept: boolean): Promise<void>
+    /** Forget the pinned key of a server (after a legitimate rebuild): the next connection asks again. */
+    forget(serverId: string): Promise<void>
   }
   logs: {
     fetch(serverId: string, containerId: string, opts: { tail: number; until?: string }): Promise<LogChunk>
-    follow(serverId: string, containerId: string, cb: (lines: string[]) => void): Promise<Unsubscribe>
+    follow(
+      serverId: string,
+      containerId: string,
+      cb: (lines: string[]) => void,
+      onEnd?: (reason?: string) => void
+    ): Promise<Unsubscribe>
   }
   actions: {
     prepareRestart(serverId: string, containerIds: string[]): Promise<PreparedAction>
@@ -57,7 +66,9 @@ export const INVOKE_CHANNELS = [
   'servers:remove',
   'servers:importSshConfig',
   'monitor:setActive',
+  'monitor:retry',
   'hostKey:answer',
+  'hostKey:forget',
   'logs:fetch',
   'logs:follow',
   'logs:unfollow',
@@ -73,5 +84,6 @@ export const EVENT_CHANNELS = {
   snapshot: 'monitor:snapshot',
   hostKeyPrompt: 'hostKey:prompt',
   hostKeyChanged: 'hostKey:changed',
-  logLines: 'logs:lines'
+  logLines: 'logs:lines',
+  logEnded: 'logs:ended'
 } as const

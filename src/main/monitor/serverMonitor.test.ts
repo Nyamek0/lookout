@@ -113,6 +113,87 @@ describe('ServerMonitor.refresh', () => {
   })
 })
 
+const failing = (when: (argv: string[]) => boolean, error: Error, base = fakeExec()): Exec & { calls: string[][] } => ({
+  calls: base.calls,
+  exec: async (argv, o) => {
+    if (when(argv)) {
+      base.calls.push(argv)
+      throw error
+    }
+    return base.exec(argv, o)
+  },
+  stream: base.stream
+})
+const timedOut = () => new Error('command timed out after 30000 ms')
+
+describe('ServerMonitor degrades instead of going red', () => {
+  it('keeps the host metrics and warns when docker hangs', async () => {
+    const snap = await make(failing((a) => a[0] === 'docker', timedOut())).refresh()
+    expect(snap.reachable).toBe(true)
+    expect(snap.host?.cores).toBe(6)
+    expect(snap.warnings).toContain('docker_unavailable')
+    expect(snap.error).toBeUndefined()
+  })
+
+  it('does not relaunch a slow docker disk scan every cycle', async () => {
+    const exec = failing((a) => a[1] === 'system', timedOut())
+    const m = make(exec)
+    await m.refresh()
+    await m.refresh()
+    expect(exec.calls.filter((a) => a[1] === 'system')).toHaveLength(1)
+    expect((await m.refresh()).reachable).toBe(true)
+  })
+
+  it('warns when docker lists containers but nothing can be read from them', async () => {
+    const exec = fakeExec((argv) => (argv[1] === 'inspect' ? { stdout: '[]' } : undefined))
+    const snap = await make(exec).refresh()
+    expect(snap.warnings).toContain('docker_unavailable')
+  })
+})
+
+describe('ServerMonitor connection failures', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+  const statCalls = (e: { calls: string[][] }) => e.calls.filter((a) => a[1] === '/proc/stat').length
+  const authError = () => Object.assign(new Error('All configured authentication methods failed'), { level: 'client-authentication' })
+
+  it('stops polling after a failed login, shows why, and resumes only on retry', async () => {
+    const exec = failing((a) => a[1] === '/proc/stat' || a[0] !== 'zzz', authError())
+    const m = make(exec, { intervals: { activeMs: 5000, backgroundMs: 45000 } })
+    m.setActive(true)
+    const seen: Snapshot[] = []
+    m.on('snapshot', (s: Snapshot) => seen.push(s))
+    m.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(seen[0]).toMatchObject({ reachable: false, status: 'error', error: { kind: 'auth' } })
+    const first = statCalls(exec)
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(statCalls(exec)).toBe(first)
+
+    m.retry()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(statCalls(exec)).toBeGreaterThan(first)
+  })
+
+  it('backs off on network errors: 5 s, then 10 s, then 20 s', async () => {
+    const err = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' })
+    const exec = failing(() => true, err)
+    const m = make(exec, { intervals: { activeMs: 5000, backgroundMs: 45000 } })
+    m.setActive(true)
+    m.start()
+    await vi.advanceTimersByTimeAsync(0)
+    const at0 = statCalls(exec)
+    await vi.advanceTimersByTimeAsync(5000)
+    const at5 = statCalls(exec)
+    expect(at5).toBeGreaterThan(at0)
+    await vi.advanceTimersByTimeAsync(5000) // only 5 s since the last try: the next one waits 10 s
+    expect(statCalls(exec)).toBe(at5)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(statCalls(exec)).toBeGreaterThan(at5)
+    m.stop()
+  })
+})
+
 describe('ServerMonitor polling', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())

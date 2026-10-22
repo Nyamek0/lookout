@@ -6,6 +6,7 @@ import { EVENT_CHANNELS } from '../shared/ipc'
 import type { ServerConfig } from '../shared/types'
 import { ActionService } from './actions/actions'
 import { defaultDomainDeps } from './collect/domains'
+import { LogFollows } from './logs/logs'
 import type { IpcServices } from './ipc'
 import { MonitorManager } from './monitor/manager'
 import { ServerMonitor } from './monitor/serverMonitor'
@@ -54,6 +55,9 @@ export function createRuntime(o: {
 
   const connections = new Map<string, SshConnection>()
   const execs = new Map<string, Exec>()
+  const follows = new LogFollows()
+  // The "key changed" alert is shown once per server, not on every failed poll; forgetting the key re-arms it.
+  const alerted = new Set<string>()
 
   const execFor = (serverId: string): Exec => {
     const existing = execs.get(serverId)
@@ -70,7 +74,8 @@ export function createRuntime(o: {
       onUnknownHost: (fingerprint) => prompter.ask(server.id, fingerprint)
     })
     const report = (e: unknown): never => {
-      if (e instanceof HostKeyChangedError) {
+      if (e instanceof HostKeyChangedError && !alerted.has(serverId)) {
+        alerted.add(serverId)
         o.send(EVENT_CHANNELS.hostKeyChanged, { serverId, expected: e.expected, actual: e.actual })
       }
       throw e
@@ -103,6 +108,14 @@ export function createRuntime(o: {
 
   const actions = new ActionService(execFor, (id) => manager.get(id)?.paths ?? new PathRegistry())
 
+  const forgetHostKey = (serverId: string): void => {
+    const server = serverStore.list().find((s) => s.id === serverId)
+    if (server) knownHosts.delete(`${server.host}:${server.port}`)
+    alerted.delete(serverId)
+    connections.get(serverId)?.close()
+    manager.retry(serverId)
+  }
+
   const services: IpcServices = {
     serverStore,
     secrets,
@@ -114,8 +127,11 @@ export function createRuntime(o: {
         connections.delete(id)
         execs.delete(id)
       },
-      setActiveServer: (id) => manager.setActiveServer(id)
+      setActiveServer: (id) => manager.setActiveServer(id),
+      retry: (id) => manager.retry(id)
     },
+    follows,
+    forgetHostKey,
     actions,
     execFor,
     readSshConfig: () => {
@@ -135,6 +151,7 @@ export function createRuntime(o: {
     services,
     start: () => manager.startAll(serverStore.list()),
     stop: () => {
+      follows.stopAll()
       manager.stopAll()
       connections.forEach((c) => c.close())
     }

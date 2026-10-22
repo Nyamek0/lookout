@@ -16,8 +16,10 @@ export interface ExecResult {
 }
 
 export interface Exec {
-  exec(argv: string[], opts?: { timeoutMs?: number }): Promise<ExecResult>
-  stream(argv: string[], onData: (chunk: string) => void): { stop(): void }
+  /** `retry:false` is for commands that must never run twice (a restart): no automatic re-run after a dropped connection. */
+  exec(argv: string[], opts?: { timeoutMs?: number; retry?: boolean }): Promise<ExecResult>
+  /** `onEnd` is called when the stream could not start or has finished on its own (not when `stop()` is called). */
+  stream(argv: string[], onData: (chunk: string) => void, onEnd?: (reason?: string) => void): { stop(): void }
 }
 
 export interface SshConnectionOptions {
@@ -44,6 +46,7 @@ export class SshConnection implements Exec {
   private client: Client | null = null
   private ready = false
   private connecting: Promise<void> | null = null
+  private inflight = 0
 
   constructor(private readonly o: SshConnectionOptions) {}
 
@@ -129,17 +132,22 @@ export class SshConnection implements Exec {
     })
   }
 
-  async exec(argv: string[], opts: { timeoutMs?: number } = {}): Promise<ExecResult> {
+  async exec(argv: string[], opts: { timeoutMs?: number; retry?: boolean } = {}): Promise<ExecResult> {
     const command = argv.map(shellQuote).join(' ')
     const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
     await this.connect()
+    this.inflight++
     try {
       return await this.run(command, timeoutMs)
     } catch (e) {
       if (e instanceof Error && e.message.includes('timed out')) throw e
+      // Never re-run a command that must not run twice, and never tear down a connection other commands are using.
+      if (opts.retry === false || this.inflight > 1) throw e
       this.close()
       await this.connect()
       return this.run(command, timeoutMs)
+    } finally {
+      this.inflight--
     }
   }
 
@@ -157,28 +165,41 @@ export class SshConnection implements Exec {
         }, timeoutMs)
         stream.on('data', (d: Buffer) => (stdout += d.toString('utf8')))
         stream.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')))
-        stream.on('close', (code: number | null) => {
+        stream.on('close', (code: number | null | undefined) => {
           clearTimeout(timer)
-          resolve({ stdout, stderr, code: code ?? 0 })
+          if (code === undefined || code === null) {
+            // No exit status arrived (connection dropped, or killed by a signal): that is not a success.
+            const note = 'connection closed before the command reported an exit status'
+            return resolve({ stdout, stderr: stderr ? `${stderr}\n${note}` : note, code: 255 })
+          }
+          resolve({ stdout, stderr, code })
         })
       })
     })
   }
 
-  stream(argv: string[], onData: (chunk: string) => void): { stop(): void } {
+  stream(argv: string[], onData: (chunk: string) => void, onEnd?: (reason?: string) => void): { stop(): void } {
     const command = argv.map(shellQuote).join(' ')
     let stopped = false
     let current: { close(): void } | null = null
-    void this.connect().then(() => {
-      if (stopped || !this.client) return
-      this.client.exec(command, (err, stream) => {
-        if (err) return
-        current = stream
-        if (stopped) return stream.close()
-        stream.on('data', (d: Buffer) => onData(d.toString('utf8')))
-        stream.stderr.on('data', (d: Buffer) => onData(d.toString('utf8')))
-      })
-    })
+    const reason = (e: unknown) => (e instanceof Error ? e.message : String(e))
+    this.connect().then(
+      () => {
+        if (stopped) return
+        if (!this.client) return onEnd?.('not connected')
+        this.client.exec(command, (err, stream) => {
+          if (err) return onEnd?.(err.message)
+          current = stream
+          if (stopped) return stream.close()
+          stream.on('data', (d: Buffer) => onData(d.toString('utf8')))
+          stream.stderr.on('data', (d: Buffer) => onData(d.toString('utf8')))
+          stream.on('close', () => {
+            if (!stopped) onEnd?.()
+          })
+        })
+      },
+      (e: unknown) => onEnd?.(reason(e))
+    )
     return {
       stop: () => {
         stopped = true

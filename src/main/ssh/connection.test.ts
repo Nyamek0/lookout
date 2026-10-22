@@ -63,6 +63,24 @@ describe('SshConnection', () => {
     expect((await c.exec(['false'])).code).toBe(3)
   })
 
+  it('never reports success when the command did not report an exit status', async () => {
+    const { make } = await setup(() => ({ stdout: 'partial', code: -1 }))
+    const r = await make().exec(['docker', 'restart', 'abcdef123456'])
+    expect(r.code).not.toBe(0)
+    expect(r.stderr).toMatch(/exit status/i)
+  })
+
+  it('tells the caller when a stream cannot start instead of failing silently', async () => {
+    const { vps, make } = await setup()
+    const c = make()
+    await vps.stop()
+    servers.splice(0)
+    const ended = await new Promise<string | undefined>((resolve) => {
+      c.stream(['echo', 'x'], () => {}, resolve)
+    })
+    expect(ended).toBeTruthy()
+  })
+
   it('passes arguments through shell quoting intact', async () => {
     let seen: string[] = []
     const { make } = await setup((argv) => {

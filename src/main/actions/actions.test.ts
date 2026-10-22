@@ -3,18 +3,21 @@ import { PathRegistry } from '../security/pathRegistry'
 import type { Exec } from '../ssh/connection'
 import { ActionService } from './actions'
 
-function setup(result = { stdout: '', stderr: '', code: 0 }) {
+function setup(result = { stdout: '', stderr: '', code: 0 }, fail?: Error) {
   const calls: string[][] = []
+  const optsSeen: ({ timeoutMs?: number; retry?: boolean } | undefined)[] = []
   const exec: Exec = {
-    exec: async (argv) => {
+    exec: async (argv, opts) => {
       calls.push(argv)
+      optsSeen.push(opts)
+      if (fail) throw fail
       return result
     },
     stream: () => ({ stop() {} })
   }
   let now = 1_000_000
   const service = new ActionService(() => exec, () => new PathRegistry(), 60_000, () => now)
-  return { service, calls, advance: (ms: number) => (now += ms) }
+  return { service, calls, optsSeen, advance: (ms: number) => (now += ms) }
 }
 
 const ID = 'abcdef123456'
@@ -37,6 +40,22 @@ describe('ActionService', () => {
     const { service } = setup()
     const other = '123456abcdef'
     expect(service.prepareRestart('s1', [ID, other]).command).toBe(`docker restart ${ID} ${other}`)
+  })
+
+  it('gives a restart time proportional to the containers and never re-runs it after a dropped connection', async () => {
+    const { service, optsSeen } = setup()
+    await service.confirm(service.prepareRestart('s1', [ID]).actionId)
+    await service.confirm(service.prepareRestart('s1', [ID, '123456abcdef', 'fedcba654321', 'a1b2c3d4e5f6']).actionId)
+    expect(optsSeen[0]).toEqual({ timeoutMs: 45_000, retry: false })
+    expect(optsSeen[1]).toEqual({ timeoutMs: 90_000, retry: false })
+  })
+
+  it('says the outcome is unknown when the command could not be followed to its end', async () => {
+    const { service } = setup(undefined, new Error('command timed out after 45000 ms'))
+    const r = await service.confirm(service.prepareRestart('s1', [ID]).actionId)
+    expect(r.ok).toBe(false)
+    expect(r.stderr).toMatch(/outcome unknown/i)
+    expect(r.stderr).toMatch(/timed out/)
   })
 
   it('reports a failing restart with its stderr', async () => {

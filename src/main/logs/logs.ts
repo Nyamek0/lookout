@@ -26,16 +26,43 @@ export async function fetchLogs(
 export function followLogs(
   exec: Exec,
   containerId: string,
-  onLines: (lines: string[]) => void
+  onLines: (lines: string[]) => void,
+  onEnd?: (reason?: string) => void
 ): { stop(): void } {
-  const argv = buildCommand('dockerLogs', { id: containerId, tail: 0, since: new Date().toISOString() })
+  const argv = buildCommand('dockerLogs', { id: containerId, tail: 0, since: new Date().toISOString(), follow: true })
   let pending = ''
-  const handle = exec.stream(argv, (chunk) => {
-    pending += chunk
-    const parts = pending.split('\n')
-    pending = parts.pop() ?? ''
-    const lines = parts.filter((l) => l.length > 0)
-    if (lines.length > 0) onLines(lines)
-  })
+  const handle = exec.stream(
+    argv,
+    (chunk) => {
+      pending += chunk
+      const parts = pending.split('\n')
+      pending = parts.pop() ?? ''
+      const lines = parts.filter((l) => l.length > 0)
+      if (lines.length > 0) onLines(lines)
+    },
+    onEnd
+  )
   return { stop: () => handle.stop() }
+}
+
+/** Open live log subscriptions, so they can be closed one by one, per server, or all at once. */
+export class LogFollows {
+  private readonly subs = new Map<string, { serverId: string; handle: { stop(): void } }>()
+
+  add(subId: string, serverId: string, handle: { stop(): void }): void {
+    this.subs.set(subId, { serverId, handle })
+  }
+
+  stop(subId: string): void {
+    this.subs.get(subId)?.handle.stop()
+    this.subs.delete(subId)
+  }
+
+  stopServer(serverId: string): void {
+    for (const [id, s] of [...this.subs]) if (s.serverId === serverId) this.stop(id)
+  }
+
+  stopAll(): void {
+    for (const id of [...this.subs.keys()]) this.stop(id)
+  }
 }
