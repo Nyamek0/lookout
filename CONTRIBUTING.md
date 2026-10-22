@@ -38,7 +38,7 @@ Almost everything on the server side is a **pure parser** (`src/main/collect`) t
 
 Implement `ProxyProvider` (`src/main/collect/proxy.ts`): `detect()` returns the sites (hosts, upstream ports, or a static
 root) and whether the proxy could be read. Add it to `src/main/collect/providers.ts`. Caddy
-(`src/main/collect/caddy.ts`) is the reference; nginx follows the same shape. Traefik and Apache are welcome.
+(`src/main/collect/caddy.ts`) and nginx (`src/main/collect/nginx.ts`) are the references. Traefik and Apache are welcome.
 
 ## Known gaps
 

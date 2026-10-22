@@ -9,7 +9,7 @@ health, CPU/RAM/disk, projects, containers, domains and logs, with **nothing to 
 
 - Connects to your servers over SSH (agent, key file or password; secrets stay in the OS keychain).
 - Finds your projects by itself: Docker Compose projects, containers, the domains your reverse proxy
-  serves them on (Caddy today, nginx next), Git info and static sites.
+  serves them on (Caddy and nginx), Git info and static sites.
 - Shows at a glance whether everything is green, and which project is eating RAM or CPU.
 - Lets you read logs (search, full screen, load older history) and restart containers, always after a
   confirmation that shows the exact command.
