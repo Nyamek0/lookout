@@ -252,7 +252,8 @@ export class ServerMonitor extends EventEmitter {
       const ids = ps.stdout.split(/\s+/).filter(Boolean)
       if (ids.length === 0) return none
       const [inspect, stats] = await Promise.all([this.run('dockerInspect', { ids }), this.run('dockerStats')])
-      if (inspect.code !== 0) {
+      // When a container disappears between `ps` and `inspect`, docker still prints the others on stdout and exits 1.
+      if (inspect.code !== 0 && !inspect.stdout.trim().startsWith('[')) {
         warnings.add(classifyDockerError(inspect.stderr) ?? 'docker_unavailable')
         return none
       }

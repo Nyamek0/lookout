@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 
 export class HostKeyChangedError extends Error {
   constructor(
@@ -14,6 +14,8 @@ export class HostKeyChangedError extends Error {
 /** Pinned SSH host fingerprints, one per `host:port`. Persisted as JSON when given a file. */
 export class KnownHosts {
   private readonly map = new Map<string, string>()
+  /** Set when the file exists but cannot be read. Treating it as empty would let a swapped server pass as "new". */
+  readonly corrupt: string | undefined
 
   constructor(private readonly file?: string) {
     if (file && existsSync(file)) {
@@ -21,7 +23,7 @@ export class KnownHosts {
         const data = JSON.parse(readFileSync(file, 'utf8')) as Record<string, string>
         for (const [k, v] of Object.entries(data)) this.map.set(k, v)
       } catch {
-        // a corrupt file is treated as empty: hosts will be asked about again
+        this.corrupt = `Saved host keys could not be read (${file}): fix or remove the file`
       }
     }
   }
@@ -31,17 +33,26 @@ export class KnownHosts {
   }
 
   set(id: string, fingerprint: string): void {
+    this.assertReadable()
     this.map.set(id, fingerprint)
     this.save()
   }
 
   /** Forget a pinned key (after a legitimate server rebuild): the next connection asks the user again. */
   delete(id: string): void {
+    this.assertReadable()
     if (this.map.delete(id)) this.save()
   }
 
+  private assertReadable(): void {
+    if (this.corrupt) throw new Error(this.corrupt)
+  }
+
   private save(): void {
-    if (this.file) writeFileSync(this.file, JSON.stringify(Object.fromEntries(this.map), null, 2))
+    if (!this.file) return
+    const tmp = `${this.file}.tmp`
+    writeFileSync(tmp, JSON.stringify(Object.fromEntries(this.map), null, 2))
+    renameSync(tmp, this.file)
   }
 }
 

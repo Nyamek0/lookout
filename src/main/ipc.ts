@@ -66,7 +66,14 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
     'servers:add': async (input) => {
       const { secret, ...config } = newServer(input)
       const server = s.serverStore.add(config)
-      if (secret) await s.secrets.set(server.id, secret)
+      if (secret) {
+        try {
+          await s.secrets.set(server.id, secret)
+        } catch (e) {
+          s.serverStore.remove(server.id) // never keep a server that has no way to sign in
+          throw e
+        }
+      }
       s.manager.add(server)
       return server
     },

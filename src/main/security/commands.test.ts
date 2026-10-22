@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCommand, isMutating } from './commands'
+import { buildCommand } from './commands'
 import { PathRegistry } from './pathRegistry'
 
 describe('buildCommand', () => {
@@ -83,7 +83,6 @@ describe('buildCommand', () => {
 
   it('can dump the nginx configuration, read-only', () => {
     expect(buildCommand('nginxConfig')).toEqual(['nginx', '-T'])
-    expect(isMutating('nginxConfig')).toBe(false)
   })
 
   it('has fixed read-only commands for host and docker state', () => {
@@ -92,10 +91,3 @@ describe('buildCommand', () => {
   })
 })
 
-describe('isMutating', () => {
-  it('flags only restart as mutating', () => {
-    expect(isMutating('dockerRestart')).toBe(true)
-    expect(isMutating('dockerLogs')).toBe(false)
-    expect(isMutating('readFile')).toBe(false)
-  })
-})

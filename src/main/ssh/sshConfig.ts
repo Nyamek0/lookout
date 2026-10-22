@@ -17,6 +17,10 @@ export function parseSshConfig(text: string, include?: (pattern: string) => stri
 
     if (key === 'include' && include) {
       for (const sub of include(value)) hosts.push(...parseSshConfig(sub, include))
+    } else if (key === 'match') {
+      // Match blocks are conditional on things we cannot evaluate: do not leak their settings into the previous Host.
+      flush()
+      current = []
     } else if (key === 'host') {
       flush()
       current = value

@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { startFakeVps, type FakeHandler, type FakeVps } from '../../../test/support/fakeVps'
 import { SshConnection } from './connection'
@@ -79,6 +82,37 @@ describe('SshConnection', () => {
       c.stream(['echo', 'x'], () => {}, resolve)
     })
     expect(ended).toBeTruthy()
+  })
+
+  it('keeps an accented character intact when it is split between two network packets', async () => {
+    const e = Buffer.from('é', 'utf8') // two bytes: c3 a9
+    const { make } = await setup(() => ({
+      stdout: '',
+      code: 0,
+      chunks: [Buffer.concat([Buffer.from('caf'), e.subarray(0, 1)]), Buffer.concat([e.subarray(1), Buffer.from(' ok\n')])]
+    }))
+    const r = await make().exec(['echo'])
+    expect(r.stdout).toBe('café ok\n')
+    expect(r.stdout).not.toContain('�')
+  })
+
+  it('caps the output it keeps in memory and says so', async () => {
+    const { make } = await setup(() => ({ stdout: 'x'.repeat(5000), code: 0 }))
+    const r = await make({ maxOutputBytes: 1000 }).exec(['cat', 'big'])
+    expect(r.stdout.length).toBeLessThanOrEqual(1000)
+    expect(r.stderr).toMatch(/truncated/i)
+    expect(r.code).toBe(0)
+  })
+
+  it('refuses to connect when the saved host keys cannot be read, and leaves the file alone', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'lookout-kh-'))
+    const file = join(dir, 'known_hosts.json')
+    writeFileSync(file, '{not json')
+    const { vps, make } = await setup()
+    const c = make({ knownHosts: new KnownHosts(file) })
+    await expect(c.connect()).rejects.toThrow(/could not be read/i)
+    expect(vps.authAttempts()).toBe(0)
+    expect(readFileSync(file, 'utf8')).toBe('{not json')
   })
 
   it('passes arguments through shell quoting intact', async () => {

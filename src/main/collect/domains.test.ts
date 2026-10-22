@@ -29,6 +29,10 @@ describe('checkDomain probing safety', () => {
     const r = await checkDomain('a.example.com', '', { resolve4: async () => ['1.2.3.4'], tlsProbe: async () => ({ validTo: new Date(now2.getTime() + 3 * 86_400_000 + 1000) }) }, now2)
     expect(r.matchesServer).toBeNull()
   })
+  it('reports a certificate without a readable expiry date instead of NaN days', async () => {
+    const r = await checkDomain('a.example.com', '1.2.3.4', { resolve4: async () => ['1.2.3.4'], tlsProbe: async () => ({ validTo: new Date('nope') }) }, now2)
+    expect(r.tls).toEqual({ ok: false, error: 'certificate has no readable expiry date' })
+  })
   it('does not probe when the name does not resolve', async () => {
     const tlsProbe = vi.fn(async () => ({ validTo: new Date() }))
     const r = await checkDomain('gone.example.com', '1.2.3.4', { resolve4: async () => Promise.reject(new Error('ENOTFOUND')), tlsProbe }, now2)

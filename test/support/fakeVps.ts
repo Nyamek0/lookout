@@ -5,6 +5,8 @@ import type { Connection } from 'ssh2'
 export interface FakeResult {
   stdout: string
   code: number
+  /** Written as separate packets instead of `stdout` (to test text split across network chunks). */
+  chunks?: Buffer[]
 }
 export type FakeHandler = (argv: string[]) => FakeResult | Promise<FakeResult>
 
@@ -83,8 +85,13 @@ export async function startFakeVps(
         const session = accept()
         session.on('exec', (acceptExec, _reject, info) => {
           const stream = acceptExec()
-          void Promise.resolve(handler(parseArgv(info.command))).then((r) => {
-            stream.write(r.stdout)
+          void Promise.resolve(handler(parseArgv(info.command))).then(async (r) => {
+            if (r.chunks) {
+              for (const chunk of r.chunks) {
+                stream.write(chunk)
+                await new Promise((resolve) => setTimeout(resolve, 40))
+              }
+            } else stream.write(r.stdout)
             // code -1 simulates a connection that dies before the command reports its exit status.
             if (r.code >= 0) stream.exit(r.code)
             stream.end()

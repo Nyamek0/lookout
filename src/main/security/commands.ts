@@ -96,8 +96,6 @@ const TABLE: Record<CommandName, Builder> = {
   }
 }
 
-const MUTATING = new Set<CommandName>(['dockerRestart'])
-
 export function buildCommand(
   name: CommandName,
   params: CommandParams = {},
@@ -105,8 +103,4 @@ export function buildCommand(
 ): string[] {
   if (!Object.hasOwn(TABLE, name)) throw new Error(`unknown command: ${String(name)}`)
   return TABLE[name](params, registry)
-}
-
-export function isMutating(name: CommandName): boolean {
-  return MUTATING.has(name)
 }

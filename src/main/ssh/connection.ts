@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { StringDecoder } from 'node:string_decoder'
 import { Client, type ConnectConfig } from 'ssh2'
 import { HostKeyChangedError, KnownHosts, toFingerprint } from './hostKeys'
 import { shellQuote } from './shellQuote'
@@ -30,9 +31,12 @@ export interface SshConnectionOptions {
   knownHosts: KnownHosts
   onUnknownHost: (fingerprint: string) => Promise<boolean>
   readyTimeoutMs?: number
+  /** Output kept in memory per command and stream (default 8 MiB): the rest is dropped and reported. */
+  maxOutputBytes?: number
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 
 function agentSocket(): string | undefined {
   return process.platform === 'win32' ? '\\\\.\\pipe\\openssh-ssh-agent' : process.env['SSH_AUTH_SOCK']
@@ -86,6 +90,10 @@ export class SshConnection implements Exec {
         keepaliveInterval: 15_000,
         hostHash: 'sha256',
         hostVerifier: ((hexHash: string, verify: (ok: boolean) => void) => {
+          if (knownHosts.corrupt) {
+            failure = new Error(knownHosts.corrupt)
+            return verify(false)
+          }
           const actual = toFingerprint(hexHash)
           const pinned = knownHosts.get(id)
           if (pinned && pinned !== actual) {
@@ -159,14 +167,37 @@ export class SshConnection implements Exec {
         if (err) return reject(err)
         let stdout = ''
         let stderr = ''
+        let kept = 0
+        let truncated = false
+        // Decoders keep a multi-byte character that is cut between two packets until its second half arrives.
+        const outDecoder = new StringDecoder('utf8')
+        const errDecoder = new StringDecoder('utf8')
+        const limit = this.o.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES
+        const keep = (d: Buffer): Buffer | null => {
+          if (kept >= limit) return (truncated = true), null
+          const room = limit - kept
+          if (d.length > room) truncated = true
+          const part = d.length > room ? d.subarray(0, room) : d
+          kept += part.length
+          return part
+        }
         const timer = setTimeout(() => {
           stream.close()
           reject(new Error(`command timed out after ${timeoutMs} ms`))
         }, timeoutMs)
-        stream.on('data', (d: Buffer) => (stdout += d.toString('utf8')))
-        stream.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')))
+        stream.on('data', (d: Buffer) => {
+          const part = keep(d)
+          if (part) stdout += outDecoder.write(part)
+        })
+        stream.stderr.on('data', (d: Buffer) => {
+          const part = keep(d)
+          if (part) stderr += errDecoder.write(part)
+        })
         stream.on('close', (code: number | null | undefined) => {
           clearTimeout(timer)
+          stdout += outDecoder.end()
+          stderr += errDecoder.end()
+          if (truncated) stderr = stderr ? `${stderr}\noutput truncated` : 'output truncated'
           if (code === undefined || code === null) {
             // No exit status arrived (connection dropped, or killed by a signal): that is not a success.
             const note = 'connection closed before the command reported an exit status'
@@ -191,8 +222,10 @@ export class SshConnection implements Exec {
           if (err) return onEnd?.(err.message)
           current = stream
           if (stopped) return stream.close()
-          stream.on('data', (d: Buffer) => onData(d.toString('utf8')))
-          stream.stderr.on('data', (d: Buffer) => onData(d.toString('utf8')))
+          const outDecoder = new StringDecoder('utf8')
+          const errDecoder = new StringDecoder('utf8')
+          stream.on('data', (d: Buffer) => onData(outDecoder.write(d)))
+          stream.stderr.on('data', (d: Buffer) => onData(errDecoder.write(d)))
           stream.on('close', () => {
             if (!stopped) onEnd?.()
           })

@@ -144,6 +144,16 @@ describe('ServerMonitor degrades instead of going red', () => {
     expect((await m.refresh()).reachable).toBe(true)
   })
 
+  it('ignores a container that vanished between listing and inspecting', async () => {
+    // docker inspect prints the objects it found, reports the missing one on stderr, and exits 1
+    const exec = fakeExec((argv) =>
+      argv[1] === 'inspect' ? { code: 1, stderr: 'Error: No such object: 111111111111', stdout: fixture('docker-inspect.json') } : undefined
+    )
+    const snap = await make(exec).refresh()
+    expect(snap.warnings).not.toContain('docker_unavailable')
+    expect(snap.projects.some((p) => p.name === 'backend')).toBe(true)
+  })
+
   it('warns when docker lists containers but nothing can be read from them', async () => {
     const exec = fakeExec((argv) => (argv[1] === 'inspect' ? { stdout: '[]' } : undefined))
     const snap = await make(exec).refresh()

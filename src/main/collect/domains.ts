@@ -63,7 +63,8 @@ export async function checkDomain(
     try {
       const { validTo } = await deps.tlsProbe(host, ips[0]!)
       const daysLeft = Math.floor((validTo.getTime() - now.getTime()) / 86_400_000)
-      tls = daysLeft < 0 ? { ok: false, daysLeft, error: 'certificate expired' } : { ok: true, daysLeft }
+      if (Number.isNaN(daysLeft)) tls = { ok: false, error: 'certificate has no readable expiry date' }
+      else tls = daysLeft < 0 ? { ok: false, daysLeft, error: 'certificate expired' } : { ok: true, daysLeft }
     } catch (e) {
       tls = { ok: false, error: e instanceof Error ? e.message : String(e) }
     }

@@ -44,6 +44,23 @@ Host solo
     ])
   })
 
+  it('does not apply the settings of a Match block to the previous Host', () => {
+    const text = `Host web
+  HostName 1.1.1.1
+  User deploy
+
+Match host web exec "true"
+  User someoneelse
+  Port 2222
+
+Host db
+  HostName 2.2.2.2
+`
+    const [web, db] = parseSshConfig(text)
+    expect(web).toMatchObject({ alias: 'web', user: 'deploy', port: 22 })
+    expect(db).toMatchObject({ alias: 'db', hostName: '2.2.2.2', port: 22 })
+  })
+
   it('returns nothing for empty input', () => {
     expect(parseSshConfig('')).toEqual([])
   })

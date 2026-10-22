@@ -68,6 +68,18 @@ describe('ipc handlers', () => {
     expect(added).toEqual([server])
   })
 
+  it('does not keep a server whose secret could not be saved to the keychain', async () => {
+    const { handlers, services, secrets, added } = setup()
+    secrets.set = async () => {
+      throw new Error('keychain locked')
+    }
+    await expect(
+      handlers['servers:add']!({ name: 'v', host: 'h', port: 22, user: 'u', authType: 'password', secret: 's' })
+    ).rejects.toThrow('keychain locked')
+    expect(services.serverStore.list()).toEqual([])
+    expect(added).toEqual([])
+  })
+
   it('removes a server, its secret and its monitor', async () => {
     const { handlers, secrets, removed, services } = setup()
     const server = (await handlers['servers:add']!({ name: 'v', host: 'h', port: 22, user: 'u', authType: 'password', secret: 's' })) as ServerConfig
