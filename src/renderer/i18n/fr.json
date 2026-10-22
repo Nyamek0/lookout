@@ -1,0 +1,6 @@
+{
+  "app": {
+    "name": "{{appName}}",
+    "tagline": "Vos serveurs, d'un coup d'œil."
+  }
+}
