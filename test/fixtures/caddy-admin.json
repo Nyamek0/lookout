@@ -1,0 +1,61 @@
+{
+  "apps": {
+    "http": {
+      "servers": {
+        "srv0": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "match": [{ "host": ["shop.example.com", "www.shop.example.com", "event.shop.example.com"] }],
+              "handle": [
+                {
+                  "handler": "subroute",
+                  "routes": [{ "handle": [{ "handler": "reverse_proxy", "upstreams": [{ "dial": "127.0.0.1:3018" }] }] }]
+                }
+              ],
+              "terminal": true
+            },
+            {
+              "match": [{ "host": ["api.shop.example.com"] }],
+              "handle": [
+                {
+                  "handler": "subroute",
+                  "routes": [
+                    {
+                      "match": [{ "path": ["/events/*/search", "/events/*/enroll-search"] }],
+                      "handle": [
+                        {
+                          "handler": "subroute",
+                          "routes": [
+                            { "handle": [{ "handler": "request_body", "max_size": 26214400 }] },
+                            { "handle": [{ "handler": "reverse_proxy", "upstreams": [{ "dial": "127.0.0.1:8000" }] }] }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "match": [{ "path": ["/files*", "/files/*"] }],
+                      "handle": [{ "handler": "reverse_proxy", "upstreams": [{ "dial": "127.0.0.1:1080" }] }]
+                    },
+                    { "handle": [{ "handler": "reverse_proxy", "upstreams": [{ "dial": "127.0.0.1:8000" }] }] }
+                  ]
+                }
+              ],
+              "terminal": true
+            },
+            {
+              "match": [{ "host": ["static.example.org", "www.static.example.org"] }],
+              "handle": [
+                {
+                  "handler": "subroute",
+                  "routes": [{ "handle": [{ "handler": "vars", "root": "/var/www/site" }, { "handler": "file_server" }] }]
+                }
+              ],
+              "terminal": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

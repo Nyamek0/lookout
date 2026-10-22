@@ -1,0 +1,36 @@
+shop.example.com, www.shop.example.com, event.shop.example.com {
+	reverse_proxy 127.0.0.1:3018
+}
+
+api.shop.example.com {
+	# public search endpoints are size-limited
+	@guest_search {
+		path /events/*/search /events/*/enroll-search
+	}
+	handle @guest_search {
+		request_body {
+			max_size 25MB
+		}
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	@tus_uploads {
+		path /files* /files/*
+	}
+	handle @tus_uploads {
+		request_body {
+			max_size 20MB
+		}
+		reverse_proxy 127.0.0.1:1080
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}
+
+static.example.org, www.static.example.org {
+	root * /var/www/site
+	file_server
+	try_files {path} {path}.html /index.html
+}
