@@ -72,6 +72,11 @@ describe('buildCommand', () => {
     ])
   })
 
+  it('can dump the nginx configuration, read-only', () => {
+    expect(buildCommand('nginxConfig')).toEqual(['nginx', '-T'])
+    expect(isMutating('nginxConfig')).toBe(false)
+  })
+
   it('has fixed read-only commands for host and docker state', () => {
     expect(buildCommand('procStat')).toEqual(['cat', '/proc/stat'])
     expect(buildCommand('dockerPsIds')[0]).toBe('docker')

@@ -13,6 +13,7 @@ export type CommandName =
   | 'dockerLogs'
   | 'dockerRestart'
   | 'caddyAdminConfig'
+  | 'nginxConfig'
   | 'readFile'
   | 'gitInfo'
 
@@ -78,6 +79,7 @@ const TABLE: Record<CommandName, Builder> = {
   },
   dockerRestart: (p) => ['docker', 'restart', ...containerIds(p.ids)],
   caddyAdminConfig: fixed('curl', '-sf', '--max-time', '3', 'http://127.0.0.1:2019/config/'),
+  nginxConfig: fixed('nginx', '-T'),
   readFile: (p, r) => ['cat', '--', registeredPath(p.path, r)],
   gitInfo: (p, r) => {
     const dir = registeredPath(p.dir, r)
