@@ -63,6 +63,31 @@ export interface Project {
   status: Status
 }
 
+/** A host from ~/.ssh/config offered when adding a server. */
+export interface SshHost {
+  alias: string
+  hostName: string
+  user?: string
+  port: number
+  identityFile?: string
+  proxyJump?: string
+}
+
+export interface LogChunk {
+  lines: string[]
+  /** Timestamp of the first line: pass it as `until` to read what came before. */
+  oldest?: string
+}
+
+export interface PreparedAction {
+  actionId: string
+  serverId: string
+  label: string
+  /** The exact command that will run on the server, as the user will see it. */
+  command: string
+  expiresAt: number
+}
+
 /** A saved server. Never holds a secret: those live in the system keychain. */
 export interface ServerConfig {
   id: string

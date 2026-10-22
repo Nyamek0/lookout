@@ -24,7 +24,7 @@ export interface SshConnectionOptions {
   host: string
   port: number
   user: string
-  auth: Auth
+  auth: Auth | (() => Promise<Auth>)
   knownHosts: KnownHosts
   onUnknownHost: (fingerprint: string) => Promise<boolean>
   readyTimeoutMs?: number
@@ -66,8 +66,10 @@ export class SshConnection implements Exec {
     this.client = null
   }
 
-  private open(): Promise<void> {
-    const { host, port, user, auth, knownHosts } = this.o
+  private async open(): Promise<void> {
+    // The secret (passphrase/password) is read from the keychain only when we actually connect.
+    const auth = typeof this.o.auth === 'function' ? await this.o.auth() : this.o.auth
+    const { host, port, user, knownHosts } = this.o
     const id = `${host}:${port}`
     let failure: Error | null = null
 

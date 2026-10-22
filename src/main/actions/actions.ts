@@ -4,14 +4,9 @@ import type { PathRegistry } from '../security/pathRegistry'
 import type { Exec } from '../ssh/connection'
 import { formatCommand } from '../ssh/shellQuote'
 
-export interface PreparedAction {
-  actionId: string
-  serverId: string
-  label: string
-  /** The exact command that will run on the server, as the user will see it. */
-  command: string
-  expiresAt: number
-}
+import type { PreparedAction } from '../../shared/types'
+
+export type { PreparedAction }
 
 interface Pending {
   serverId: string

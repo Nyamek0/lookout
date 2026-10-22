@@ -42,6 +42,21 @@ describe('SshConnection', () => {
     expect(r).toMatchObject({ stdout: 'hi\n', code: 0 })
   })
 
+  it('accepts an async auth resolver, called when connecting', async () => {
+    const { make } = await setup()
+    let asked = 0
+    const c = make({
+      auth: async () => {
+        asked++
+        return { type: 'password', password: 'x' }
+      }
+    })
+    expect(asked).toBe(0)
+    await c.connect()
+    expect(asked).toBe(1)
+    expect((await c.exec(['echo', 'ok'])).code).toBe(0)
+  })
+
   it('returns a non-zero exit code without throwing', async () => {
     const { make } = await setup(() => ({ stdout: '', code: 3 }))
     const c = make()

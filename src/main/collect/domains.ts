@@ -53,7 +53,7 @@ export async function checkDomain(
   now: Date = new Date()
 ): Promise<DomainCheck> {
   const ips = await deps.resolve4(host).catch(() => [] as string[])
-  const matchesServer = ips.length > 0 ? ips.includes(serverIp) : null
+  const matchesServer = ips.length > 0 && serverIp ? ips.includes(serverIp) : null
 
   // The hostname comes from the server's proxy config: only probe a public address we resolved ourselves.
   let tls: DomainCheck['tls']

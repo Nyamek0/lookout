@@ -60,8 +60,11 @@ export class ServerMonitor extends EventEmitter {
   private running = false
   private active = false
 
+  private serverIp: string
+
   constructor(private readonly o: MonitorOptions) {
     super()
+    this.serverIp = o.serverIp
     this.intervals = o.intervals ?? { activeMs: 5000, backgroundMs: 45000 }
     this.providers = o.providers ?? proxyProviders
   }
@@ -83,6 +86,12 @@ export class ServerMonitor extends EventEmitter {
     this.active = active
     // Restart the countdown so a newly selected server refreshes right away at the fast rate.
     if (this.running) this.schedule(active ? 0 : this.intervals.backgroundMs)
+  }
+
+  /** For servers added by hostname: the address is resolved after the monitor starts. */
+  setServerIp(ip: string): void {
+    this.serverIp = ip
+    this.domainCache.clear()
   }
 
   refresh(): Promise<Snapshot> {
@@ -268,7 +277,7 @@ export class ServerMonitor extends EventEmitter {
     })
     await Promise.all(
       stale.map(async (h) => {
-        this.domainCache.set(h, { at: now, check: await checkDomain(h, this.o.serverIp, this.o.deps) })
+        this.domainCache.set(h, { at: now, check: await checkDomain(h, this.serverIp, this.o.deps) })
       })
     )
     return Object.fromEntries(hosts.map((h) => [h, this.domainCache.get(h)!.check]))

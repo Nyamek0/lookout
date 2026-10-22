@@ -1,11 +1,9 @@
 import { buildCommand } from '../security/commands'
 import type { Exec } from '../ssh/connection'
 
-export interface LogChunk {
-  lines: string[]
-  /** Timestamp of the first line: pass it as `until` to read what came before. */
-  oldest?: string
-}
+import type { LogChunk } from '../../shared/types'
+
+export type { LogChunk }
 
 const TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s/
 const stamp = (line: string): string => TIMESTAMP.exec(line)?.[1] ?? ''

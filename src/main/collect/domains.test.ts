@@ -25,6 +25,10 @@ describe('checkDomain probing safety', () => {
     expect(tlsProbe).not.toHaveBeenCalled()
     expect(r.tls).toEqual({ ok: false, error: 'resolves to a non-public address: not probed' })
   })
+  it('leaves the match unknown while the server address is not known yet', async () => {
+    const r = await checkDomain('a.example.com', '', { resolve4: async () => ['1.2.3.4'], tlsProbe: async () => ({ validTo: new Date(now2.getTime() + 3 * 86_400_000 + 1000) }) }, now2)
+    expect(r.matchesServer).toBeNull()
+  })
   it('does not probe when the name does not resolve', async () => {
     const tlsProbe = vi.fn(async () => ({ validTo: new Date() }))
     const r = await checkDomain('gone.example.com', '1.2.3.4', { resolve4: async () => Promise.reject(new Error('ENOTFOUND')), tlsProbe }, now2)

@@ -1,11 +1,6 @@
-export interface SshHost {
-  alias: string
-  hostName: string
-  user?: string
-  port: number
-  identityFile?: string
-  proxyJump?: string
-}
+import type { SshHost } from '../../shared/types'
+
+export type { SshHost }
 
 /** `include` resolves an Include pattern to the texts of the matching files (the caller owns the filesystem). */
 export function parseSshConfig(text: string, include?: (pattern: string) => string[]): SshHost[] {
