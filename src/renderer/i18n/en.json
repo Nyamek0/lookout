@@ -2,5 +2,17 @@
   "app": {
     "name": "{{appName}}",
     "tagline": "Your servers, at a glance."
+  },
+  "sidebar": {
+    "servers": "Servers",
+    "add": "Add a server",
+    "language": "Language",
+    "empty": "No server yet"
+  },
+  "status": {
+    "ok": "OK",
+    "warn": "Warning",
+    "error": "Error",
+    "neutral": "Idle"
   }
 }
