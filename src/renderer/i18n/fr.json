@@ -14,5 +14,36 @@
     "warn": "Attention",
     "error": "Erreur",
     "neutral": "Inactif"
+  },
+  "addServer": {
+    "title": "Ajouter un serveur",
+    "fromSshConfig": "Depuis votre config SSH",
+    "details": "Détails du serveur",
+    "name": "Nom",
+    "host": "Hôte",
+    "port": "Port",
+    "user": "Utilisateur",
+    "auth": "Authentification",
+    "authAgent": "Agent SSH",
+    "authKey": "Fichier de clé",
+    "authPassword": "Mot de passe",
+    "keyPath": "Fichier de clé",
+    "passphrase": "Phrase secrète (facultatif)",
+    "password": "Mot de passe",
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "proxyJump": "ProxyJump n'est pas encore pris en charge pour cet hôte.",
+    "failed": "Impossible d'ajouter le serveur : {{message}}"
+  },
+  "hostKey": {
+    "title": "Faire confiance à ce serveur ?",
+    "body": "Première connexion à ce serveur. Vérifiez que l'empreinte correspond avant de lui faire confiance.",
+    "trust": "Faire confiance",
+    "cancel": "Annuler",
+    "changedTitle": "L'identité du serveur a changé",
+    "changedBody": "La clé d'hôte ne correspond plus à celle que vous aviez approuvée. La connexion a été bloquée : quelqu'un l'intercepte peut-être.",
+    "expected": "Attendue",
+    "received": "Reçue",
+    "close": "Fermer"
   }
 }

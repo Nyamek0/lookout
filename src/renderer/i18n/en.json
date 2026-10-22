@@ -14,5 +14,36 @@
     "warn": "Warning",
     "error": "Error",
     "neutral": "Idle"
+  },
+  "addServer": {
+    "title": "Add a server",
+    "fromSshConfig": "From your SSH config",
+    "details": "Server details",
+    "name": "Name",
+    "host": "Host",
+    "port": "Port",
+    "user": "User",
+    "auth": "Authentication",
+    "authAgent": "SSH agent",
+    "authKey": "Key file",
+    "authPassword": "Password",
+    "keyPath": "Key file",
+    "passphrase": "Passphrase (optional)",
+    "password": "Password",
+    "add": "Add",
+    "cancel": "Cancel",
+    "proxyJump": "ProxyJump is not supported yet for this host.",
+    "failed": "Could not add the server: {{message}}"
+  },
+  "hostKey": {
+    "title": "Trust this server?",
+    "body": "First connection to this server. Check that the fingerprint matches before trusting it.",
+    "trust": "Trust",
+    "cancel": "Cancel",
+    "changedTitle": "Server identity changed",
+    "changedBody": "The host key no longer matches the one you trusted. The connection was blocked: someone may be intercepting it.",
+    "expected": "Expected",
+    "received": "Received",
+    "close": "Close"
   }
 }
