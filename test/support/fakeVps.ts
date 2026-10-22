@@ -54,11 +54,19 @@ export function fingerprintOf(publicKey: string): string {
   return `SHA256:${b64}`
 }
 
+/** ssh2 1.17 occasionally generates an unparseable ed25519 key (~0.5%): regenerate until it parses. */
+export function generateHostKey(): { private: string; public: string } {
+  for (;;) {
+    const keys = utils.generateKeyPairSync('ed25519')
+    if (!(utils.parseKey(keys.private) instanceof Error)) return keys
+  }
+}
+
 export async function startFakeVps(
   handler: FakeHandler,
   opts: { port?: number; hostKey?: { private: string; public: string } } = {}
 ): Promise<FakeVps> {
-  const keys = opts.hostKey ?? utils.generateKeyPairSync('ed25519')
+  const keys = opts.hostKey ?? generateHostKey()
   const clients = new Set<Connection>()
   let attempts = 0
 
