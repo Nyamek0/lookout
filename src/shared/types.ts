@@ -63,6 +63,17 @@ export interface Project {
   status: Status
 }
 
+/** A saved server. Never holds a secret: those live in the system keychain. */
+export interface ServerConfig {
+  id: string
+  name: string
+  host: string
+  port: number
+  user: string
+  authType: 'agent' | 'key' | 'password'
+  keyPath?: string
+}
+
 export type SnapshotWarning = 'docker_unavailable' | 'proxy_unavailable' | 'permission_denied'
 
 export interface Snapshot {
