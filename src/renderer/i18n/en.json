@@ -32,6 +32,20 @@
   "projects": {
     "title": "Projects"
   },
+  "logs": {
+    "search": "Search logs",
+    "older": "Load older",
+    "follow": "Follow",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen",
+    "showFull": "Show full line",
+    "closeFull": "Close",
+    "next": "Next match",
+    "previous": "Previous match",
+    "empty": "No log lines yet",
+    "none": "No container to read logs from",
+    "failed": "Could not read logs: {{message}}"
+  },
   "kind": {
     "compose": "Compose project",
     "container": "Container",

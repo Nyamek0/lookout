@@ -32,6 +32,20 @@
   "projects": {
     "title": "Projets"
   },
+  "logs": {
+    "search": "Rechercher dans les logs",
+    "older": "Charger plus ancien",
+    "follow": "Suivre",
+    "fullscreen": "Plein écran",
+    "exitFullscreen": "Quitter le plein écran",
+    "showFull": "Afficher la ligne entière",
+    "closeFull": "Fermer",
+    "next": "Résultat suivant",
+    "previous": "Résultat précédent",
+    "empty": "Pas encore de logs",
+    "none": "Aucun conteneur dont lire les logs",
+    "failed": "Impossible de lire les logs : {{message}}"
+  },
   "kind": {
     "compose": "Projet Compose",
     "container": "Conteneur",
