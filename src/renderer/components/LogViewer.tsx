@@ -165,16 +165,18 @@ function LogLines({ serverId, containerId, fullscreen }: { serverId: string; con
 export function LogViewer({
   serverId,
   containers,
+  initialContainerId,
   fullscreen,
   onToggleFullscreen
 }: {
   serverId: string
   containers: { id: string; name: string }[]
+  initialContainerId?: string
   fullscreen: boolean
   onToggleFullscreen: () => void
 }) {
   const { t } = useTranslation()
-  const [selected, setSelected] = useState(containers[0]?.id)
+  const [selected, setSelected] = useState(initialContainerId ?? containers[0]?.id)
   const active = containers.find((c) => c.id === selected) ?? containers[0]
 
   return (

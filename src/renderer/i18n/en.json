@@ -32,6 +32,20 @@
   "projects": {
     "title": "Projects"
   },
+  "nav": {
+    "overview": "Overview",
+    "projects": "Projects",
+    "connecting": "Connecting…",
+    "welcome": "Add your first server to get started."
+  },
+  "restart": {
+    "body": "This command will run on the server:",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "done": "Restarted.",
+    "failed": "Restart failed: {{stderr}}",
+    "dismiss": "Dismiss"
+  },
   "logs": {
     "search": "Search logs",
     "older": "Load older",

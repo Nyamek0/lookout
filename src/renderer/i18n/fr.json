@@ -32,6 +32,20 @@
   "projects": {
     "title": "Projets"
   },
+  "nav": {
+    "overview": "Vue d'ensemble",
+    "projects": "Projets",
+    "connecting": "Connexion…",
+    "welcome": "Ajoutez votre premier serveur pour commencer."
+  },
+  "restart": {
+    "body": "Cette commande va être exécutée sur le serveur :",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "done": "Redémarré.",
+    "failed": "Échec du redémarrage : {{stderr}}",
+    "dismiss": "Fermer"
+  },
   "logs": {
     "search": "Rechercher dans les logs",
     "older": "Charger plus ancien",
