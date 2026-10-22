@@ -15,6 +15,20 @@
     "error": "Error",
     "neutral": "Idle"
   },
+  "home": {
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "consuming": "Who is consuming right now",
+    "noProjects": "No project found on this server.",
+    "unreachable": "Server unreachable",
+    "dockerUnavailable": "Docker unavailable",
+    "dockerPermission": "Permission denied: add the SSH user to the docker group, or connect as root.",
+    "dockerMissing": "Docker is not installed or not running on this server.",
+    "proxyUnavailable": "The reverse proxy could not be read: domains are hidden.",
+    "notDetected": "Not detected",
+    "noData": "—"
+  },
   "addServer": {
     "title": "Add a server",
     "fromSshConfig": "From your SSH config",
@@ -39,6 +53,7 @@
     "title": "Trust this server?",
     "body": "First connection to this server. Check that the fingerprint matches before trusting it.",
     "trust": "Trust",
+    "waiting": "{{count}} more waiting",
     "cancel": "Cancel",
     "changedTitle": "Server identity changed",
     "changedBody": "The host key no longer matches the one you trusted. The connection was blocked: someone may be intercepting it.",

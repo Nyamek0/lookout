@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HostKeyChangedInfo, HostKeyPromptInfo, LookoutApi } from '../../shared/ipc'
 import '../i18n'
+import { useAppStore } from '../state/store'
 import { HostKeyPrompt } from './HostKeyPrompt'
 
 let pushPrompt: (p: HostKeyPromptInfo) => void = () => {}
 let pushChanged: (c: HostKeyChangedInfo) => void = () => {}
 const answer = vi.fn(async () => {})
+
+afterEach(() => vi.useRealTimers())
 
 beforeEach(() => {
   answer.mockClear()
@@ -21,9 +24,53 @@ beforeEach(() => {
   } as unknown as LookoutApi
 })
 
+describe('HostKeyPrompt safety', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      servers: [
+        { id: 's1', name: 'prod', host: '1.2.3.4', port: 22, user: 'root', authType: 'agent' },
+        { id: 's2', name: 'staging', host: '5.6.7.8', port: 2222, user: 'deploy', authType: 'agent' }
+      ]
+    })
+  })
+
+  it('says which server is asking', () => {
+    render(<HostKeyPrompt armDelayMs={0} />)
+    act(() => pushPrompt({ promptId: 'p1', serverId: 's2', fingerprint: 'SHA256:abc' }))
+    expect(screen.getByText(/staging/)).toBeInTheDocument()
+    expect(screen.getByText(/5\.6\.7\.8:2222/)).toBeInTheDocument()
+  })
+
+  it('queues prompts: a new one never replaces the one being read', async () => {
+    render(<HostKeyPrompt armDelayMs={0} />)
+    act(() => pushPrompt({ promptId: 'p1', serverId: 's1', fingerprint: 'SHA256:first' }))
+    act(() => pushPrompt({ promptId: 'p2', serverId: 's2', fingerprint: 'SHA256:second' }))
+    expect(screen.getByText('SHA256:first')).toBeInTheDocument()
+    expect(screen.queryByText('SHA256:second')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Trust' }))
+    expect(answer).toHaveBeenCalledTimes(1)
+    expect(answer).toHaveBeenLastCalledWith('p1', true)
+
+    expect(screen.getByText('SHA256:second')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(answer).toHaveBeenLastCalledWith('p2', false)
+  })
+
+  it('keeps Trust disabled for a moment whenever a new fingerprint is shown', async () => {
+    vi.useFakeTimers()
+    render(<HostKeyPrompt armDelayMs={500} />)
+    act(() => pushPrompt({ promptId: 'p1', serverId: 's1', fingerprint: 'SHA256:first' }))
+    expect(screen.getByRole('button', { name: 'Trust' })).toBeDisabled()
+    act(() => vi.advanceTimersByTime(501))
+    expect(screen.getByRole('button', { name: 'Trust' })).toBeEnabled()
+    vi.useRealTimers()
+  })
+})
+
 describe('HostKeyPrompt', () => {
   it('shows the fingerprint and trusts it on request', async () => {
-    render(<HostKeyPrompt />)
+    render(<HostKeyPrompt armDelayMs={0} />)
     act(() => pushPrompt({ promptId: 'p1', serverId: 's1', fingerprint: 'SHA256:abc' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText('SHA256:abc')).toBeInTheDocument()
@@ -33,7 +80,7 @@ describe('HostKeyPrompt', () => {
   })
 
   it('refuses on cancel', async () => {
-    render(<HostKeyPrompt />)
+    render(<HostKeyPrompt armDelayMs={0} />)
     act(() => pushPrompt({ promptId: 'p2', serverId: 's1', fingerprint: 'SHA256:abc' }))
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(answer).toHaveBeenCalledWith('p2', false)

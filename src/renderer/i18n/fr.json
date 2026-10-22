@@ -15,6 +15,20 @@
     "error": "Erreur",
     "neutral": "Inactif"
   },
+  "home": {
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disque",
+    "consuming": "Qui consomme en ce moment",
+    "noProjects": "Aucun projet trouvé sur ce serveur.",
+    "unreachable": "Serveur injoignable",
+    "dockerUnavailable": "Docker indisponible",
+    "dockerPermission": "Permission refusée : ajoutez l'utilisateur SSH au groupe docker, ou connectez-vous en root.",
+    "dockerMissing": "Docker n'est pas installé ou ne tourne pas sur ce serveur.",
+    "proxyUnavailable": "Le reverse proxy n'a pas pu être lu : les domaines sont masqués.",
+    "notDetected": "Non détectés",
+    "noData": "—"
+  },
   "addServer": {
     "title": "Ajouter un serveur",
     "fromSshConfig": "Depuis votre config SSH",
@@ -39,6 +53,7 @@
     "title": "Faire confiance à ce serveur ?",
     "body": "Première connexion à ce serveur. Vérifiez que l'empreinte correspond avant de lui faire confiance.",
     "trust": "Faire confiance",
+    "waiting": "{{count}} autre(s) en attente",
     "cancel": "Annuler",
     "changedTitle": "L'identité du serveur a changé",
     "changedBody": "La clé d'hôte ne correspond plus à celle que vous aviez approuvée. La connexion a été bloquée : quelqu'un l'intercepte peut-être.",
