@@ -15,6 +15,22 @@ health, CPU/RAM/disk, projects, containers, domains and logs, with **nothing to 
   confirmation that shows the exact command.
 - It never deploys anything: you keep committing and pushing from your own machine.
 
+## Download
+
+Pick the installer for your system on the [latest release](https://github.com/Nyamek0/lookout/releases/latest):
+
+| Your system | File |
+|---|---|
+| Mac with Apple Silicon (M1 or newer) | `lookout-<version>-mac-arm64.dmg` |
+| Mac with an Intel processor | `lookout-<version>-mac-x64.dmg` |
+| Windows 10 / 11 | `lookout-<version>-win-x64.exe` |
+
+The builds are **not code-signed yet**, so the first launch needs one extra step:
+
+- **macOS**: drag the app to *Applications*. If macOS says it is damaged or from an unidentified developer, run
+  `xattr -cr /Applications/lookout.app`, or right-click the app and choose *Open*.
+- **Windows**: if SmartScreen blocks the installer, choose *More info*, then *Run anyway*.
+
 ## Try it without a server
 
 ```bash
@@ -33,15 +49,6 @@ npm run package    # installer for the current platform, in release/
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). The design and the plan are in `docs/superpowers/`.
 
-## Installing a build
-
-Builds are **not code-signed yet**, so your system will warn you:
-
-- **macOS**: right-click the app, choose *Open*, then confirm (Gatekeeper).
-- **Windows**: in the SmartScreen dialog choose *More info*, then *Run anyway*.
-
-Installers must be built on the platform they target (the keychain module is native):
-use the *Package* workflow on GitHub, or `npm run package` on each OS.
 
 ## License
 

@@ -1,6 +1,8 @@
 # appId and productName must match src/shared/brand.ts (a test enforces it).
 appId: com.nyamek0.lookout
 productName: lookout
+# One predictable name per installer: lookout-0.1.0-mac-arm64.dmg, lookout-0.1.0-win-x64.exe, ...
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: release
 files:
@@ -9,15 +11,15 @@ files:
 # Native modules cannot be loaded from inside the asar archive.
 asarUnpack:
   - node_modules/@napi-rs/**
+afterPack: scripts/afterPack.cjs
 mac:
   category: public.app-category.developer-tools
-  target:
-    - target: dmg
-      arch: [arm64, x64]
+  # No Developer ID yet: electron-builder must not sign, scripts/afterPack.cjs signs ad hoc instead.
+  identity: null
+  # The architecture comes from the command line (--arm64 / --x64): each CI runner builds exactly one installer.
+  target: dmg
 win:
-  target:
-    - target: nsis
-      arch: [x64]
+  target: nsis
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

@@ -25,3 +25,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Starts the built app in demo mode and drives it end to end, on each system.
+      - name: Smoke test (Linux needs a virtual display)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke
+      - name: Smoke test
+        if: runner.os != 'Linux'
+        run: npm run smoke

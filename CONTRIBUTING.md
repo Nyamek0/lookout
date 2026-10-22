@@ -45,3 +45,11 @@ root) and whether the proxy could be read. Add it to `src/main/collect/providers
 - `ProxyJump` hosts in `~/.ssh/config` are listed but cannot be connected to yet.
 - Docker rootless and Podman are not supported.
 - Windows is built and tested in CI, but the SSH agent and installer are not verified by hand: please report problems.
+
+## Releasing
+
+1. Set the new version in `package.json` and commit it.
+2. Tag it and push the tag: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The *Release* workflow checks that the tag matches `package.json`, runs the tests and the smoke test, builds the
+   Mac (Apple Silicon and Intel) and Windows installers, and prepares a **draft** release with checksums.
+4. Open the draft on GitHub, try an installer, then publish it.

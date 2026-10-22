@@ -1,0 +1,76 @@
+name: Release
+# Push a tag such as v0.1.0 (matching the version in package.json) to build the installers and prepare a draft release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # One runner per installer: the keychain module is native and must be installed for its own architecture.
+          - { runner: macos-latest, args: '--mac --arm64', name: mac-arm64, app: 'release/mac-arm64/lookout.app/Contents/MacOS/lookout' }
+          - { runner: macos-15-intel, args: '--mac --x64', name: mac-x64, app: 'release/mac/lookout.app/Contents/MacOS/lookout' }
+          - { runner: windows-latest, args: '--win --x64', name: win-x64, app: 'release/win-unpacked/lookout.exe' }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: The tag must match the version in package.json
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: test "$TAG" = "v$(node -p "require('./package.json').version")"
+      - run: npm test
+      - run: npm run build
+      - name: Smoke test the built app
+        run: npm run smoke
+      - name: Package (not code-signed)
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          BUILDER_ARGS: ${{ matrix.args }}
+        run: npx electron-builder $BUILDER_ARGS --publish never
+      # The same walk-through, but on the packaged app: what people download must start and show data.
+      - name: Smoke test the packaged app
+        shell: bash
+        env:
+          SMOKE_APP: ${{ matrix.app }}
+        run: npm run smoke
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.name }}
+          path: |
+            release/*.dmg
+            release/*.exe
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: gh release create "$TAG" dist/* --repo "$REPO" --title "$TAG" --notes-file .github/release-notes.md --generate-notes --draft

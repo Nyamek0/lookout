@@ -1,6 +1,6 @@
 {
   "name": "lookout",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Open-source desktop app to see and manage your VPS servers over SSH",
   "license": "MIT",
@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "package": "electron-vite build && electron-builder",
-    "dev:demo": "cross-env LOOKOUT_DEMO=1 electron-vite dev"
+    "dev:demo": "cross-env LOOKOUT_DEMO=1 electron-vite dev",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
