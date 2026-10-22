@@ -1,0 +1,49 @@
+[
+  {
+    "Id": "d58c008e93802f0174773121b8315e97864606c3a4a4f054eeffd7822429715e",
+    "Name": "/logexcollab-queue-1",
+    "Config": {
+      "Image": "ghcr.io/nyamek0/logexcollab-v2-app:sha-c6b18ce",
+      "Labels": {
+        "com.docker.compose.project": "logexcollab",
+        "com.docker.compose.service": "queue",
+        "com.docker.compose.project.working_dir": "/opt/logexcollab",
+        "com.docker.compose.project.config_files": "/opt/logexcollab/docker-compose.yml,/opt/logexcollab/docker-compose.prod.yml"
+      }
+    },
+    "State": { "Status": "running", "ExitCode": 0, "StartedAt": "2026-10-21T17:23:59Z", "Health": { "Status": "healthy" } },
+    "HostConfig": { "RestartPolicy": { "Name": "unless-stopped" } },
+    "NetworkSettings": { "Ports": { "80/tcp": null, "9000/tcp": null } }
+  },
+  {
+    "Id": "abc123def4560000000000000000000000000000000000000000000000000000",
+    "Name": "/backend-api-1",
+    "Config": {
+      "Image": "backend-api",
+      "Labels": {
+        "com.docker.compose.project": "backend",
+        "com.docker.compose.service": "api",
+        "com.docker.compose.project.working_dir": "/opt/shop/backend",
+        "com.docker.compose.project.config_files": "/opt/shop/backend/docker-compose.yml"
+      }
+    },
+    "State": { "Status": "running", "ExitCode": 0, "StartedAt": "2026-10-20T10:00:00Z" },
+    "HostConfig": { "RestartPolicy": { "Name": "always" } },
+    "NetworkSettings": {
+      "Ports": {
+        "8000/tcp": [
+          { "HostIp": "127.0.0.1", "HostPort": "8000" },
+          { "HostIp": "::1", "HostPort": "8000" }
+        ]
+      }
+    }
+  },
+  {
+    "Id": "9999999999990000000000000000000000000000000000000000000000000000",
+    "Name": "/one-shot",
+    "Config": { "Image": "alpine:3", "Labels": {} },
+    "State": { "Status": "exited", "ExitCode": 1, "StartedAt": "2026-10-20T09:00:00Z" },
+    "HostConfig": { "RestartPolicy": { "Name": "" } },
+    "NetworkSettings": { "Ports": {} }
+  }
+]
