@@ -6,11 +6,11 @@ import { caddyProvider, parseCaddyAdminConfig, parseCaddyfile } from './caddy'
 
 const expected = [
   {
-    hosts: ['shop.example.com', 'www.shop.example.com', 'event.shop.example.com'],
+    hosts: ['example.com', 'www.example.com', 'event.example.com'],
     upstreams: [{ host: '127.0.0.1', port: 3018 }]
   },
   {
-    hosts: ['api.shop.example.com'],
+    hosts: ['api.example.com'],
     upstreams: [
       { host: '127.0.0.1', port: 8000 },
       { host: '127.0.0.1', port: 1080 }

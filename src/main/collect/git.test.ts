@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { parseGitInfo } from './git'
 
 describe('parseGitInfo', () => {
-  const head = 'c6b18ce\n2026-10-07T18:02:54+00:00\nMerge pull request #42 from Nyamek0/master\nHEAD -> production, origin/production\n'
+  const head = 'c6b18ce\n2026-10-07T18:02:54+00:00\nMerge pull request #42 from acme/master\nHEAD -> production, origin/production\n'
 
   it('reads commit, date, subject and branch', () => {
-    expect(parseGitInfo(head, 'git@github.com:Nyamek0/logexcollab-v2.git\n')).toEqual({
-      remote: 'git@github.com:Nyamek0/logexcollab-v2.git',
+    expect(parseGitInfo(head, 'git@github.com:acme/shop.git\n')).toEqual({
+      remote: 'git@github.com:acme/shop.git',
       branch: 'production',
       commit: 'c6b18ce',
       committedAt: '2026-10-07T18:02:54+00:00',
-      subject: 'Merge pull request #42 from Nyamek0/master'
+      subject: 'Merge pull request #42 from acme/master'
     })
   })
 

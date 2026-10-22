@@ -1,8 +1,8 @@
-shop.example.com, www.shop.example.com, event.shop.example.com {
+example.com, www.example.com, event.example.com {
 	reverse_proxy 127.0.0.1:3018
 }
 
-api.shop.example.com {
+api.example.com {
 	# public search endpoints are size-limited
 	@guest_search {
 		path /events/*/search /events/*/enroll-search

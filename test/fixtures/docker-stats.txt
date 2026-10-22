@@ -1,2 +1,2 @@
 {"BlockIO":"0B / 0B","CPUPerc":"1.50%","Container":"abc123def456","ID":"abc123def456","MemPerc":"1.02%","MemUsage":"120MiB / 11GiB","Name":"backend-api-1","NetIO":"1kB / 2kB","PIDs":"12"}
-{"BlockIO":"0B / 0B","CPUPerc":"0.23%","Container":"d58c008e9380","ID":"d58c008e9380","MemPerc":"0.38%","MemUsage":"45.02MiB / 11.69GiB","Name":"logexcollab-queue-1","NetIO":"1kB / 2kB","PIDs":"4"}
+{"BlockIO":"0B / 0B","CPUPerc":"0.23%","Container":"d58c008e9380","ID":"d58c008e9380","MemPerc":"0.38%","MemUsage":"45.02MiB / 11.69GiB","Name":"shop-queue-1","NetIO":"1kB / 2kB","PIDs":"4"}

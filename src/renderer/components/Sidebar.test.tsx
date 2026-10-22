@@ -6,14 +6,14 @@ import '../i18n'
 import { Sidebar } from './Sidebar'
 
 const servers = [
-  { id: 'a', name: 'my-server', status: 'ok' as const },
+  { id: 'a', name: 'vps-main', status: 'ok' as const },
   { id: 'b', name: 'vps-client', status: 'error' as const }
 ]
 
 describe('Sidebar', () => {
   it('lists every server with its status', () => {
     render(<Sidebar servers={servers} activeId="a" onSelect={() => {}} onAdd={() => {}} />)
-    expect(screen.getByText('my-server')).toBeInTheDocument()
+    expect(screen.getByText('vps-main')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'error' })).toBeInTheDocument()
   })
 
@@ -22,7 +22,7 @@ describe('Sidebar', () => {
     render(<Sidebar servers={servers} activeId="a" onSelect={onSelect} onAdd={() => {}} />)
     await userEvent.click(screen.getByText('vps-client'))
     expect(onSelect).toHaveBeenCalledWith('b')
-    expect(screen.getByText('my-server').closest('button')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByText('vps-main').closest('button')).toHaveAttribute('aria-current', 'true')
   })
 
   it('offers to add a server', async () => {

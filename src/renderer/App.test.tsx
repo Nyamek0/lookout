@@ -9,7 +9,7 @@ import { App } from './App'
 import { useAppStore } from './state/store'
 
 const GiB = 1024 ** 3
-const server: ServerConfig = { id: 's1', name: 'my-server', host: '1.2.3.4', port: 22, user: 'root', authType: 'agent' }
+const server: ServerConfig = { id: 's1', name: 'vps-main', host: '1.2.3.4', port: 22, user: 'root', authType: 'agent' }
 const container: ContainerInfo = {
   id: 'abcdef123456', name: 'backend-api-1', image: 'backend-api', service: 'api', composeProject: 'backend',
   state: 'running', exitCode: 0, restartPolicy: 'always', publishedPorts: []
@@ -59,7 +59,7 @@ describe('App', () => {
   it('walks from the overview to a project and restarts it only after confirmation', async () => {
     installApi([server])
     render(<App />)
-    await screen.findByText('my-server')
+    await screen.findByText('vps-main')
     act(() => push(snapshot))
     await userEvent.click(await screen.findByText('backend'))
 
@@ -80,7 +80,7 @@ describe('App', () => {
   it('opens the logs of the project from its page', async () => {
     installApi([server])
     render(<App />)
-    await screen.findByText('my-server')
+    await screen.findByText('vps-main')
     act(() => push(snapshot))
     await userEvent.click(await screen.findByText('backend'))
     await userEvent.click(await screen.findByRole('button', { name: 'Logs' }))

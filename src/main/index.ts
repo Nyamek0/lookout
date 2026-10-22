@@ -1,7 +1,10 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHandlers, registerIpc } from './ipc'
 import { createRuntime } from './runtime'
+import { MemorySecretStore } from './store/secrets'
 import { windowOptions } from './window'
 
 let mainWindow: BrowserWindow | null = null
@@ -24,8 +27,25 @@ function createMainWindow(onReady: () => void): void {
   }
 }
 
-void app.whenReady().then(() => {
-  const runtime = createRuntime({ userData: app.getPath('userData'), send })
+/** `npm run dev:demo`: a throwaway profile talking to a fixture-backed fake server, no real VPS needed. */
+async function startDemo(): Promise<ReturnType<typeof createRuntime>> {
+  const runtime = createRuntime({
+    userData: mkdtempSync(join(tmpdir(), 'lookout-demo-')),
+    send,
+    secrets: new MemorySecretStore()
+  })
+  const { startDemoServer } = await import('../../scripts/demo-server')
+  await startDemoServer(2222)
+  const server = runtime.services.serverStore.add({
+    name: 'Demo VPS', host: '127.0.0.1', port: 2222, user: 'demo', authType: 'password'
+  })
+  await runtime.services.secrets.set(server.id, 'demo')
+  return runtime
+}
+
+void app.whenReady().then(async () => {
+  const runtime =
+    process.env['LOOKOUT_DEMO'] === '1' ? await startDemo() : createRuntime({ userData: app.getPath('userData'), send })
   registerIpc(ipcMain, createHandlers(runtime.services))
   // Start polling once the interface is listening, so the first snapshots are not lost.
   createMainWindow(() => runtime.start())

@@ -68,7 +68,7 @@ describe('detectProjects', () => {
   it('turns a static site into a project without containers', () => {
     const site: ProxySite = { hosts: ['static.example.org'], upstreams: [], staticRoot: '/var/www/site' }
     const { projects } = detectProjects({ ...empty, sites: [site] })
-    expect(projects[0]).toMatchObject({ name: 'static-site', kind: 'static', containerIds: [], status: 'neutral', staticRoot: '/var/www/site' })
+    expect(projects[0]).toMatchObject({ name: 'site', kind: 'static', containerIds: [], status: 'neutral', staticRoot: '/var/www/site' })
   })
 
   it('lists proxied sites that no container serves as undetected', () => {

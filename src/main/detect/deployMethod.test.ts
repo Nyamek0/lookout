@@ -10,7 +10,7 @@ describe('estimateDeployMethod', () => {
     expect(estimateDeployMethod(['localhost:5000/app:1'], git)).toBe('ci-image')
   })
   it('does not mistake docker hub images for a registry', () => {
-    expect(estimateDeployMethod(['postgres:16', 'nyamek0/app:1'], null)).toBe('file-copy')
+    expect(estimateDeployMethod(['postgres:16', 'acme/app:1'], null)).toBe('file-copy')
   })
   it('falls back to git-pull when the project folder is a git checkout', () => {
     expect(estimateDeployMethod(['portfolio:a1b2c3d'], git)).toBe('git-pull')

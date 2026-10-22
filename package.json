@@ -12,7 +12,8 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "package": "electron-vite build"
+    "package": "electron-vite build && electron-builder",
+    "dev:demo": "cross-env LOOKOUT_DEMO=1 electron-vite dev"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -25,7 +26,9 @@
     "@types/ssh2": "^1.15.6",
     "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.1",
+    "cross-env": "^10.1.0",
     "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^6.0.0",
     "eslint": "^10.13.0",
     "globals": "^17.13.0",

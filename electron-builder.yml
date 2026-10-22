@@ -1,0 +1,23 @@
+# appId and productName must match src/shared/brand.ts (a test enforces it).
+appId: com.nyamek0.lookout
+productName: lookout
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+# Native modules cannot be loaded from inside the asar archive.
+asarUnpack:
+  - node_modules/@napi-rs/**
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

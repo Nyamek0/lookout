@@ -1,14 +1,14 @@
 [
   {
     "Id": "d58c008e93802f0174773121b8315e97864606c3a4a4f054eeffd7822429715e",
-    "Name": "/logexcollab-queue-1",
+    "Name": "/shop-queue-1",
     "Config": {
-      "Image": "ghcr.io/nyamek0/logexcollab-v2-app:sha-c6b18ce",
+      "Image": "ghcr.io/acme/shop-app:sha-c6b18ce",
       "Labels": {
-        "com.docker.compose.project": "logexcollab",
+        "com.docker.compose.project": "shop",
         "com.docker.compose.service": "queue",
-        "com.docker.compose.project.working_dir": "/opt/logexcollab",
-        "com.docker.compose.project.config_files": "/opt/logexcollab/docker-compose.yml,/opt/logexcollab/docker-compose.prod.yml"
+        "com.docker.compose.project.working_dir": "/opt/shop",
+        "com.docker.compose.project.config_files": "/opt/shop/docker-compose.yml,/opt/shop/docker-compose.prod.yml"
       }
     },
     "State": { "Status": "running", "ExitCode": 0, "StartedAt": "2026-10-21T17:23:59Z", "Health": { "Status": "healthy" } },
@@ -23,8 +23,8 @@
       "Labels": {
         "com.docker.compose.project": "backend",
         "com.docker.compose.service": "api",
-        "com.docker.compose.project.working_dir": "/opt/shop/backend",
-        "com.docker.compose.project.config_files": "/opt/shop/backend/docker-compose.yml"
+        "com.docker.compose.project.working_dir": "/opt/backend",
+        "com.docker.compose.project.config_files": "/opt/backend/docker-compose.yml"
       }
     },
     "State": { "Status": "running", "ExitCode": 0, "StartedAt": "2026-10-20T10:00:00Z" },

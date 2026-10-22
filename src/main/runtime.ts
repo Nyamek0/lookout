@@ -14,7 +14,7 @@ import { authFor } from './ssh/auth'
 import { SshConnection, type Exec } from './ssh/connection'
 import { HostKeyChangedError, KnownHosts } from './ssh/hostKeys'
 import { HostKeyPrompter } from './ssh/prompter'
-import { KeyringSecretStore } from './store/secrets'
+import { KeyringSecretStore, type SecretStore } from './store/secrets'
 import { ServerStore } from './store/serverStore'
 import { SettingsStore } from './store/settings'
 
@@ -40,10 +40,15 @@ function readIncluded(sshDir: string, pattern: string): string[] {
 }
 
 /** Builds every long-lived service of the main process and wires them together. */
-export function createRuntime(o: { userData: string; send: (channel: string, payload: unknown) => void }) {
+export function createRuntime(o: {
+  userData: string
+  send: (channel: string, payload: unknown) => void
+  /** Defaults to the OS keychain; the demo mode swaps in an in-memory store. */
+  secrets?: SecretStore
+}) {
   const serverStore = new ServerStore(join(o.userData, 'servers.json'))
   const knownHosts = new KnownHosts(join(o.userData, 'known_hosts.json'))
-  const secrets = new KeyringSecretStore()
+  const secrets: SecretStore = o.secrets ?? new KeyringSecretStore()
   const settings = new SettingsStore(join(o.userData, 'settings.json'))
   const prompter = new HostKeyPrompter((p) => o.send(EVENT_CHANNELS.hostKeyPrompt, p))
 

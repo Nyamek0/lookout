@@ -13,17 +13,17 @@ describe('parseDockerInspect', () => {
   const containers = parseDockerInspect(fixture('docker-inspect.json'))
 
   it('reads compose metadata, health and restart policy', () => {
-    const q = containers.find((c) => c.name === 'logexcollab-queue-1')!
+    const q = containers.find((c) => c.name === 'shop-queue-1')!
     expect(q).toMatchObject({
       id: 'd58c008e9380',
-      composeProject: 'logexcollab',
+      composeProject: 'shop',
       service: 'queue',
-      workingDir: '/opt/logexcollab',
-      configFiles: ['/opt/logexcollab/docker-compose.yml', '/opt/logexcollab/docker-compose.prod.yml'],
+      workingDir: '/opt/shop',
+      configFiles: ['/opt/shop/docker-compose.yml', '/opt/shop/docker-compose.prod.yml'],
       state: 'running',
       health: 'healthy',
       restartPolicy: 'unless-stopped',
-      image: 'ghcr.io/nyamek0/logexcollab-v2-app:sha-c6b18ce'
+      image: 'ghcr.io/acme/shop-app:sha-c6b18ce'
     })
     expect(q.publishedPorts).toEqual([])
   })
@@ -66,9 +66,9 @@ describe('parseDockerStats / parseSize', () => {
 describe('parseDockerSystemDf', () => {
   it('reads volume and image sizes', () => {
     const df = parseDockerSystemDf(fixture('docker-system-df.json'))
-    expect(df.volumes['logexcollab_uploads_photo']).toBe(787200)
+    expect(df.volumes['shop_uploads_photo']).toBe(787200)
     expect(df.volumes['backend_postgres_data']).toBe(1_200_000_000)
-    expect(df.images['ghcr.io/nyamek0/logexcollab-v2-app:sha-c6b18ce']).toBe(432_000_000)
+    expect(df.images['ghcr.io/acme/shop-app:sha-c6b18ce']).toBe(432_000_000)
   })
 
   it('returns empty maps on junk input', () => {

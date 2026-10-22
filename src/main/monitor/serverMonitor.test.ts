@@ -50,11 +50,11 @@ describe('ServerMonitor.refresh', () => {
     expect(snap).toMatchObject({ serverId: 's1', reachable: true, warnings: [] })
     expect(snap.host).toMatchObject({ memTotalBytes: 12254208 * 1024, diskTotalBytes: 211243098112, cores: 6, uptimeSeconds: 1000.5 })
     const backend = snap.projects.find((p) => p.name === 'backend')!
-    expect(backend.domains.map((d) => d.host)).toEqual(['api.shop.example.com'])
+    expect(backend.domains.map((d) => d.host)).toEqual(['api.example.com'])
     expect(backend.domains[0]).toMatchObject({ matchesServer: true, tls: { ok: true, daysLeft: 20 } })
     expect(backend.diskBytes).toBe(1_200_000_000)
     expect(backend.git).toMatchObject({ branch: 'main', remote: 'git@github.com:o/r.git' })
-    expect(snap.projects.find((p) => p.name === 'logexcollab')!.diskBytes).toBe(432_787_200)
+    expect(snap.projects.find((p) => p.name === 'shop')!.diskBytes).toBe(432_787_200)
     expect(snap.projects.some((p) => p.kind === 'static')).toBe(true)
     expect(snap.status).toBe('error') // the fixture's "one-shot" container exited with code 1
   })
