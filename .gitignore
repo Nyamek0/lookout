@@ -6,3 +6,7 @@ out/
 .DS_Store
 coverage/
 release/
+
+# Brand and marketing material (logo, posters, video) is not committed anymore.
+# What was committed before stays tracked: git only ignores files it does not know yet.
+/brand/
