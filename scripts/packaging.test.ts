@@ -28,6 +28,15 @@ describe('release packaging', () => {
     expect((JSON.parse(read('package.json')) as { version: string }).version).toMatch(/^\d+\.\d+\.\d+$/)
   })
 
+  // electron-builder turns build/icon.png into the .icns and .ico files; without it every installer carries the Electron logo
+  it('ships an app icon big enough to make the icons of every system', () => {
+    const icon = readFileSync(join(process.cwd(), 'build/icon.png'))
+    expect(icon.subarray(1, 4).toString('latin1')).toBe('PNG')
+    // the first chunk (IHDR) holds the width and the height as two big-endian integers
+    expect(icon.readUInt32BE(16)).toBeGreaterThanOrEqual(512)
+    expect(icon.readUInt32BE(20)).toBeGreaterThanOrEqual(512)
+  })
+
   it('only signs mac apps ad hoc: other systems are left untouched', async () => {
     const require = createRequire(import.meta.url)
     const afterPack = (require('./afterPack.cjs') as { default: (c: unknown) => Promise<void> }).default
