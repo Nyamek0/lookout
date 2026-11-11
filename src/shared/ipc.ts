@@ -61,6 +61,9 @@ export interface LookoutApi {
     getLanguage(): Promise<'en' | 'fr'>
     setLanguage(language: 'en' | 'fr'): Promise<void>
   }
+  app: {
+    onNavigate(cb: (target: { serverId: string; projectId?: string }) => void): Unsubscribe
+  }
 }
 
 /** Request/response channels (ipcRenderer.invoke). Keep in step with the handlers: a test enforces it. */
@@ -93,5 +96,6 @@ export const EVENT_CHANNELS = {
   hostKeyPrompt: 'hostKey:prompt',
   hostKeyChanged: 'hostKey:changed',
   logLines: 'logs:lines',
-  logEnded: 'logs:ended'
+  logEnded: 'logs:ended',
+  navigate: 'app:navigate'
 } as const

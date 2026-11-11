@@ -3,6 +3,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { APP_ID } from '../shared/brand'
 import { createHandlers, registerIpc } from './ipc'
 import { createRuntime } from './runtime'
 import { isTrustedUrl } from './security/sender'
@@ -13,6 +14,14 @@ let mainWindow: BrowserWindow | null = null
 
 const send = (channel: string, payload: unknown): void => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload)
+}
+
+const focusWindow = (): void => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  }
 }
 
 const trusted = (url: string | undefined): boolean =>
@@ -44,7 +53,8 @@ async function startDemo(): Promise<ReturnType<typeof createRuntime>> {
   const runtime = createRuntime({
     userData: mkdtempSync(join(tmpdir(), 'lookout-demo-')),
     send,
-    secrets: new MemorySecretStore()
+    secrets: new MemorySecretStore(),
+    focusWindow
   })
   const { startDemoServer } = await import('../../scripts/demo-server')
   await startDemoServer(2222)
@@ -56,8 +66,11 @@ async function startDemo(): Promise<ReturnType<typeof createRuntime>> {
 }
 
 void app.whenReady().then(async () => {
+  app.setAppUserModelId(APP_ID)
   const runtime =
-    process.env['LOOKOUT_DEMO'] === '1' ? await startDemo() : createRuntime({ userData: app.getPath('userData'), send })
+    process.env['LOOKOUT_DEMO'] === '1'
+      ? await startDemo()
+      : createRuntime({ userData: app.getPath('userData'), send, focusWindow })
   registerIpc(ipcMain, createHandlers(runtime.services), trusted)
   const closeStreams = () => runtime.services.follows.stopAll()
   // Start polling once the interface is listening, so the first snapshots are not lost.

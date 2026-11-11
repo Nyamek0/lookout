@@ -68,6 +68,9 @@ const api: LookoutApi = {
     update: (patch) => invoke('settings:update', patch),
     getLanguage: () => invoke('settings:getLanguage'),
     setLanguage: (language) => invoke('settings:setLanguage', language)
+  },
+  app: {
+    onNavigate: (cb) => on<{ serverId: string; projectId?: string }>(EVENT_CHANNELS.navigate, cb)
   }
 }
 

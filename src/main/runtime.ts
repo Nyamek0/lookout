@@ -2,14 +2,18 @@ import { lookup } from 'node:dns/promises'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { Notification } from 'electron'
 import { EVENT_CHANNELS } from '../shared/ipc'
 import type { ServerConfig } from '../shared/types'
 import { ActionService } from './actions/actions'
+import { AlertTracker } from './alerts/alerts'
 import { defaultDomainDeps } from './collect/domains'
-import { LogFollows } from './logs/logs'
+import { createMainI18n } from './i18n'
 import type { IpcServices } from './ipc'
+import { LogFollows } from './logs/logs'
 import { MonitorManager } from './monitor/manager'
 import { ServerMonitor } from './monitor/serverMonitor'
+import { Notifier } from './notify/notifier'
 import { PathRegistry } from './security/pathRegistry'
 import { authFor } from './ssh/auth'
 import { SshConnection, type Exec } from './ssh/connection'
@@ -46,12 +50,37 @@ export function createRuntime(o: {
   send: (channel: string, payload: unknown) => void
   /** Defaults to the OS keychain; the demo mode swaps in an in-memory store. */
   secrets?: SecretStore
+  showNotification?: (options: { title: string; body: string; silent?: boolean; onClick?: () => void }) => void
+  focusWindow?: () => void
 }) {
   const serverStore = new ServerStore(join(o.userData, 'servers.json'))
   const knownHosts = new KnownHosts(join(o.userData, 'known_hosts.json'))
   const secrets: SecretStore = o.secrets ?? new KeyringSecretStore()
   const settings = new SettingsStore(join(o.userData, 'settings.json'))
   const prompter = new HostKeyPrompter((p) => o.send(EVENT_CHANNELS.hostKeyPrompt, p))
+  const i18n = createMainI18n(settings)
+  const tracker = new AlertTracker()
+
+  const defaultShow = (opts: { title: string; body: string; silent?: boolean; onClick?: () => void }) => {
+    try {
+      if (!Notification.isSupported()) return
+      const n = new Notification({ title: opts.title, body: opts.body, silent: opts.silent })
+      if (opts.onClick) n.on('click', opts.onClick)
+      n.show()
+    } catch {
+      // ignore notification errors (e.g. in test environments without display)
+    }
+  }
+
+  const notifier = new Notifier({
+    show: o.showNotification ?? defaultShow,
+    t: (key, opts) => i18n.t(key, opts),
+    onNavigate: (target) => {
+      o.focusWindow?.()
+      o.send(EVENT_CHANNELS.navigate, target)
+    },
+    getServerName: (id) => serverStore.list().find((s) => s.id === id)?.name ?? id
+  })
 
   const connections = new Map<string, SshConnection>()
   const execs = new Map<string, Exec>()
@@ -104,7 +133,13 @@ export function createRuntime(o: {
     }
     return monitor
   })
-  manager.onSnapshot((snapshot) => o.send(EVENT_CHANNELS.snapshot, snapshot))
+  manager.onSnapshot((snapshot) => {
+    o.send(EVENT_CHANNELS.snapshot, snapshot)
+    const alerts = tracker.observe(snapshot, settings.get())
+    for (const alert of alerts) {
+      notifier.notify(alert)
+    }
+  })
 
   const actions = new ActionService(execFor, (id) => manager.get(id)?.paths ?? new PathRegistry())
 
@@ -123,6 +158,7 @@ export function createRuntime(o: {
       add: (s) => manager.add(s),
       remove: (id) => {
         manager.remove(id)
+        tracker.forget(id)
         connections.get(id)?.close()
         connections.delete(id)
         execs.delete(id)
