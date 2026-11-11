@@ -205,5 +205,16 @@
     "standalone": "Standalone",
     "logs": "Logs",
     "restart": "Restart"
+  },
+  "databases": {
+    "title": "Databases",
+    "empty": "No databases detected on this server.",
+    "engine": "Engine",
+    "ports": "Ports",
+    "volume": "Data size",
+    "health": "Health",
+    "project": "Project",
+    "standalone": "Standalone",
+    "logs": "Logs"
   }
 }

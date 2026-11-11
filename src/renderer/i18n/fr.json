@@ -205,5 +205,16 @@
     "standalone": "Indépendant",
     "logs": "Logs",
     "restart": "Redémarrer"
+  },
+  "databases": {
+    "title": "Bases de données",
+    "empty": "Aucune base de données détectée sur ce serveur.",
+    "engine": "Moteur",
+    "ports": "Ports",
+    "volume": "Taille des données",
+    "health": "Santé",
+    "project": "Projet",
+    "standalone": "Indépendante",
+    "logs": "Logs"
   }
 }

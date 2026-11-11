@@ -152,3 +152,4 @@ flowchart TD
   - Mettre à jour `README.md` et `AGENTS.md`.
   - Exécuter la chaîne CI complète : `npm run lint && npm run typecheck && npm test && npm run build && npm run smoke`.
 - **Commit** : `feat: server navigation with containers, databases and deployments tabs`
+
