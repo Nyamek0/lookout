@@ -6,9 +6,11 @@ import { LogViewer } from './components/LogViewer'
 import { Shell } from './components/Shell'
 import { i18n } from './i18n'
 import { AddServer } from './screens/AddServer'
+import { Fleet } from './screens/Fleet'
 import { Home } from './screens/Home'
 import { ProjectPage } from './screens/ProjectPage'
 import { Projects } from './screens/Projects'
+import { fleetStatus } from '../shared/fleet'
 import { useAppStore } from './state/store'
 import { useRestart } from './state/useRestart'
 
@@ -114,9 +116,18 @@ function Content() {
     )
   } else if (view.name === 'fleet') {
     body = (
-      <div data-testid="fleet-view">
-        <h1 className="text-xl font-semibold mb-4">{t('tray.fleet')}</h1>
-      </div>
+      <Fleet
+        servers={servers}
+        snapshots={snapshots}
+        onOpenServer={(id) => {
+          choose(id)
+        }}
+        onOpenProject={(sId, pId) => {
+          select(sId)
+          setView({ name: 'project', id: pId })
+        }}
+        onRetry={(id) => void window.lookout.monitor.retry(id)}
+      />
     )
   } else if (!snapshot) {
     body = <p className="text-sm text-dim">{t('nav.connecting')}</p>
@@ -165,7 +176,18 @@ function Content() {
 
   return (
     <>
-      <Shell servers={entries} activeId={activeId} onSelect={choose} onAdd={() => setView({ name: 'add' })}>
+      <Shell
+        servers={entries}
+        activeId={activeId}
+        isFleet={view.name === 'fleet'}
+        fleetStatus={fleetStatus(servers, snapshots)}
+        onSelectFleet={() => {
+          setView({ name: 'fleet' })
+          setFocus({ kind: 'fleet' })
+        }}
+        onSelect={choose}
+        onAdd={() => setView({ name: 'add' })}
+      >
         {restart.result && (
           <div
             role="status"

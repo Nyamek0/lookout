@@ -163,5 +163,13 @@
     "stopped": "Conteneur arrêté",
     "restarting": "Conteneur en redémarrage",
     "unhealthy": "Conteneur non fonctionnel"
+  },
+  "fleet": {
+    "allHealthy": "Tout va bien sur {{count}} serveurs",
+    "allHealthy_one": "Tout va bien sur 1 serveur",
+    "retry": "Réessayer",
+    "waiting": "En attente du premier instantané…",
+    "ago": "il y a {{seconds}} s",
+    "moreIssues": "+{{count}} autres"
   }
 }

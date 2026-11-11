@@ -163,5 +163,13 @@
     "stopped": "Container stopped",
     "restarting": "Container restarting",
     "unhealthy": "Container unhealthy"
+  },
+  "fleet": {
+    "allHealthy": "All servers are healthy ({{count}})",
+    "allHealthy_one": "All servers are healthy (1 server)",
+    "retry": "Retry",
+    "waiting": "Waiting for first snapshot…",
+    "ago": "{{seconds}}s ago",
+    "moreIssues": "+{{count}} more"
   }
 }

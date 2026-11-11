@@ -31,4 +31,24 @@ describe('Sidebar', () => {
     await userEvent.click(screen.getByRole('button', { name: /add a server/i }))
     expect(onAdd).toHaveBeenCalled()
   })
+
+  it('shows All servers item when more than one server exists', async () => {
+    const onSelectFleet = vi.fn()
+    render(
+      <Sidebar
+        servers={servers}
+        activeId={null}
+        isFleet={true}
+        fleetStatus="error"
+        onSelectFleet={onSelectFleet}
+        onSelect={() => {}}
+        onAdd={() => {}}
+      />
+    )
+    const fleetBtn = screen.getByRole('button', { name: /all servers/i })
+    expect(fleetBtn).toBeInTheDocument()
+    expect(fleetBtn).toHaveAttribute('aria-current', 'true')
+    await userEvent.click(fleetBtn)
+    expect(onSelectFleet).toHaveBeenCalled()
+  })
 })
