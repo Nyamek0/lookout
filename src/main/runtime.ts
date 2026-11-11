@@ -2,9 +2,10 @@ import { lookup } from 'node:dns/promises'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { Notification } from 'electron'
+import { Menu, nativeImage, Notification, Tray } from 'electron'
+import { fleetSummary } from '../shared/fleet'
 import { EVENT_CHANNELS } from '../shared/ipc'
-import type { ServerConfig } from '../shared/types'
+import type { ServerConfig, Snapshot } from '../shared/types'
 import { ActionService } from './actions/actions'
 import { AlertTracker } from './alerts/alerts'
 import { defaultDomainDeps } from './collect/domains'
@@ -22,6 +23,8 @@ import { HostKeyPrompter } from './ssh/prompter'
 import { KeyringSecretStore, type SecretStore } from './store/secrets'
 import { ServerStore } from './store/serverStore'
 import { SettingsStore } from './store/settings'
+import { TrayController } from './tray/controller'
+import { dotBitmap } from './tray/icon'
 
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/
 
@@ -52,6 +55,8 @@ export function createRuntime(o: {
   secrets?: SecretStore
   showNotification?: (options: { title: string; body: string; silent?: boolean; onClick?: () => void }) => void
   focusWindow?: () => void
+  quitApp?: () => void
+  trayController?: TrayController
 }) {
   const serverStore = new ServerStore(join(o.userData, 'servers.json'))
   const knownHosts = new KnownHosts(join(o.userData, 'known_hosts.json'))
@@ -81,6 +86,43 @@ export function createRuntime(o: {
     },
     getServerName: (id) => serverStore.list().find((s) => s.id === id)?.name ?? id
   })
+
+  let trayController = o.trayController
+  if (!trayController) {
+    try {
+      const icon = nativeImage.createFromBitmap(dotBitmap('neutral', 16), { width: 16, height: 16 })
+      const tray = new Tray(icon)
+      trayController = new TrayController({
+        tray,
+        createIcon: (st) => nativeImage.createFromBitmap(dotBitmap(st, 16), { width: 16, height: 16 }),
+        buildMenu: (items, onAction) => {
+          const template = items.map((it) => {
+            if (it.type === 'separator') return { type: 'separator' as const }
+            return {
+              label: it.label,
+              enabled: it.enabled !== false,
+              click: () => (it.id ? onAction(it.id) : undefined)
+            }
+          })
+          return Menu.buildFromTemplate(template)
+        },
+        t: (k, opts) => i18n.t(k, opts),
+        onAction: (act) => {
+          o.focusWindow?.()
+          if (act.id === 'quit') {
+            o.quitApp?.()
+          } else if (act.id === 'fleet') {
+            o.send(EVENT_CHANNELS.navigate, {})
+          } else if (act.id === 'server' && act.serverId) {
+            o.send(EVENT_CHANNELS.navigate, { serverId: act.serverId })
+          }
+        }
+      })
+      settings.onChange(() => trayController?.render())
+    } catch {
+      // Tray is not supported or running in headless/test environment
+    }
+  }
 
   const connections = new Map<string, SshConnection>()
   const execs = new Map<string, Exec>()
@@ -138,6 +180,14 @@ export function createRuntime(o: {
     const alerts = tracker.observe(snapshot, settings.get())
     for (const alert of alerts) {
       notifier.notify(alert)
+    }
+    if (trayController) {
+      const latest = manager.latest()
+      const snapMap: Record<string, Snapshot> = {}
+      for (const snap of latest) snapMap[snap.serverId] = snap
+      snapMap[snapshot.serverId] = snapshot
+      const summary = fleetSummary(serverStore.list(), snapMap)
+      trayController.update(summary)
     }
   })
 
