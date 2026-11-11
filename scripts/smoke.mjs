@@ -80,7 +80,7 @@ try {
   const text = () => run('document.body.innerText')
   // `contains` is for rows whose button text carries more than the label (a project row also shows its RAM).
   const click = (label, { contains = false } = {}) =>
-    run(`(() => { const want = ${JSON.stringify(label)}; const b = [...document.querySelectorAll('button, [role=button]')].find((b) => (${contains} ? b.textContent.includes(want) : b.textContent.trim() === want) && !b.disabled); if (!b) return false; b.click(); return true })()`)
+    run(`(() => { const want = ${JSON.stringify(label)}; const b = [...document.querySelectorAll('button, [data-testid=server-card]')].find((b) => (${contains} ? b.textContent.includes(want) : b.textContent.trim() === want) && !b.disabled); if (!b) return false; b.click(); return true })()`)
   async function until(description, check) {
     for (let i = 0; i < 160; i++) {
       const value = await check()

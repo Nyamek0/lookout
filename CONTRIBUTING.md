@@ -33,6 +33,7 @@ Almost everything on the server side is a **pure parser** (`src/main/collect`) t
 5. **Nothing leaves the user's machine** except SSH to their servers, DNS and a TLS handshake with their own domains.
 6. **UI text goes through i18n** (`src/renderer/i18n/en.json` and `fr.json` must have the same keys; a test enforces it).
 7. The product name is provisional: it lives in `src/shared/brand.ts`, `package.json` and `electron-builder.yml` only.
+8. **Notifications, tray and fleet overview are 100% local**: no remote commands and zero external network traffic.
 
 ## Adding support for another reverse proxy
 

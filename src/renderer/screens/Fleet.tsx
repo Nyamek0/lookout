@@ -42,13 +42,8 @@ export function Fleet({
           return (
             <div
               key={s.id}
-              role="button"
-              tabIndex={0}
               data-testid="server-card"
               onClick={() => onOpenServer(s.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') onOpenServer(s.id)
-              }}
               className="flex flex-col gap-4 rounded-lg border border-line bg-panel p-4 transition-colors hover:border-fg/30 cursor-pointer"
             >
               {/* Header */}
