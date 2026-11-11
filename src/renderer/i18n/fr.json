@@ -216,5 +216,17 @@
     "project": "Projet",
     "standalone": "Indépendante",
     "logs": "Logs"
+  },
+  "deployments": {
+    "title": "Déploiements",
+    "empty": "Aucun projet déployé sur ce serveur.",
+    "method": "Méthode",
+    "branch": "Branche",
+    "commit": "Dernier commit",
+    "remote": "Dépôt",
+    "open": "Voir le projet",
+    "methodCi": "Image CI",
+    "methodGit": "Git Pull",
+    "methodFile": "Copie de fichiers"
   }
 }
