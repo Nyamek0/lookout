@@ -73,4 +73,45 @@ describe('Settings', () => {
 
     expect(onTest).toHaveBeenCalledTimes(1)
   })
+
+  it('checks for updates and shows up-to-date message', async () => {
+    const onCheck = vi.fn().mockResolvedValue({
+      currentVersion: '0.2.0',
+      latestVersion: '0.2.0',
+      hasUpdate: false,
+      releaseUrl: ''
+    })
+    render(<Settings preferences={DEFAULT_PREFERENCES} onCheckForUpdates={onCheck} isWindows={false} />)
+
+    const checkBtn = screen.getByRole('button', { name: /check for updates/i })
+    await userEvent.click(checkBtn)
+
+    expect(onCheck).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/latest version/i)).toBeInTheDocument()
+  })
+
+  it('shows update available message and download button when newer version exists', async () => {
+    const onCheck = vi.fn().mockResolvedValue({
+      currentVersion: '0.1.1',
+      latestVersion: '0.2.0',
+      hasUpdate: true,
+      releaseUrl: 'https://github.com/Nyamek0/lookout/releases/tag/v0.2.0'
+    })
+    const onDownload = vi.fn().mockResolvedValue(undefined)
+    render(
+      <Settings
+        preferences={DEFAULT_PREFERENCES}
+        onCheckForUpdates={onCheck}
+        onOpenReleasePage={onDownload}
+        isWindows={false}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /check for updates/i }))
+    expect(await screen.findByText(/0\.2\.0/)).toBeInTheDocument()
+
+    const downloadBtn = screen.getByRole('button', { name: /download/i })
+    await userEvent.click(downloadBtn)
+    expect(onDownload).toHaveBeenCalledWith('https://github.com/Nyamek0/lookout/releases/tag/v0.2.0')
+  })
 })

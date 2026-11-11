@@ -79,7 +79,13 @@ async function startDemo(): Promise<ReturnType<typeof createRuntime>> {
     send,
     secrets: new MemorySecretStore(),
     focusWindow,
-    quitApp
+    quitApp,
+    checkForUpdates: async () => ({
+      currentVersion: '0.2.0',
+      latestVersion: '0.2.0',
+      hasUpdate: false,
+      releaseUrl: 'https://github.com/Nyamek0/lookout/releases'
+    })
   })
   const { startDemoServer } = await import('../../scripts/demo-server')
   await startDemoServer(2222)

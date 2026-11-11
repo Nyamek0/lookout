@@ -69,6 +69,15 @@ export class Notifier {
     })
   }
 
+  notifyUpdate(info: { version: string; releaseUrl?: string; onOpen?: () => void }): void {
+    this.o.show({
+      title: this.o.t('updates.notifyTitle', { version: info.version }),
+      body: this.o.t('updates.notifyBody', { version: info.version }),
+      silent: false,
+      onClick: info.onOpen
+    })
+  }
+
   private formatIssue(item: AlertItem): string {
     const issue = item.issue
     const kind = issue.kind

@@ -70,6 +70,10 @@ const api: LookoutApi = {
     setLanguage: (language) => invoke('settings:setLanguage', language),
     testNotification: () => invoke('settings:testNotification')
   },
+  updates: {
+    check: () => invoke('updates:check'),
+    openReleasePage: (url?: string) => invoke('updates:openReleasePage', url)
+  },
   app: {
     onNavigate: (cb) => on<{ serverId: string; projectId?: string }>(EVENT_CHANNELS.navigate, cb)
   }

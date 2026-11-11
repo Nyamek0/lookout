@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Preferences, PreferencesPatch } from '../../shared/types'
+import type { Preferences, PreferencesPatch, UpdateInfo } from '../../shared/types'
 import { useAppStore } from '../state/store'
 
 export interface SettingsProps {
   preferences?: Preferences
   onUpdatePreferences?: (patch: PreferencesPatch) => Promise<void>
   onTestNotification?: () => Promise<void>
+  onCheckForUpdates?: () => Promise<UpdateInfo>
+  onOpenReleasePage?: (url?: string) => Promise<void>
   isWindows?: boolean
 }
 
@@ -14,6 +16,8 @@ export function Settings({
   preferences: propPreferences,
   onUpdatePreferences: propUpdatePreferences,
   onTestNotification: propTestNotification,
+  onCheckForUpdates: propCheckForUpdates,
+  onOpenReleasePage: propOpenReleasePage,
   isWindows = typeof navigator !== 'undefined' && /windows|win32/i.test(navigator.userAgent)
 }: SettingsProps) {
   const { t, i18n } = useTranslation()
@@ -21,6 +25,9 @@ export function Settings({
   const prefs = propPreferences ?? store.preferences
   const update = propUpdatePreferences ?? store.updatePreferences
   const [testSent, setTestSent] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [updateError, setUpdateError] = useState(false)
 
   const handleLanguageChange = (language: 'en' | 'fr') => {
     void i18n.changeLanguage(language)
@@ -35,6 +42,34 @@ export function Settings({
     }
     setTestSent(true)
     setTimeout(() => setTestSent(false), 3000)
+  }
+
+  const handleCheckUpdates = async () => {
+    setChecking(true)
+    setUpdateError(false)
+    try {
+      const info = propCheckForUpdates
+        ? await propCheckForUpdates()
+        : await window.lookout?.updates.check()
+      if (info) {
+        setUpdateInfo(info)
+      } else {
+        setUpdateError(true)
+      }
+    } catch {
+      setUpdateError(true)
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!updateInfo?.releaseUrl) return
+    if (propOpenReleasePage) {
+      await propOpenReleasePage(updateInfo.releaseUrl)
+    } else {
+      await window.lookout?.updates.openReleasePage(updateInfo.releaseUrl)
+    }
   }
 
   return (
@@ -130,6 +165,52 @@ export function Settings({
           </label>
         </section>
       )}
+
+      {/* Updates */}
+      <section className="flex flex-col gap-4 rounded-lg border border-line bg-panel p-5">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-dim">{t('updates.title')}</h2>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-medium text-fg">
+              {t('updates.current', { version: updateInfo?.currentVersion ?? '0.2.0' })}
+            </div>
+            {updateInfo && !updateInfo.hasUpdate && (
+              <div className="mt-1 text-xs text-ok">
+                {t('updates.upToDate', { version: updateInfo.currentVersion })}
+              </div>
+            )}
+            {updateInfo && updateInfo.hasUpdate && (
+              <div className="mt-1 text-xs text-warn">
+                {t('updates.available', { version: updateInfo.latestVersion })}
+              </div>
+            )}
+            {updateError && (
+              <div className="mt-1 text-xs text-bad">
+                {t('updates.failed')}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {updateInfo?.hasUpdate && (
+              <button
+                type="button"
+                onClick={() => void handleDownload()}
+                className="rounded-md bg-fg px-3 py-1.5 text-sm font-medium text-ink hover:bg-fg/90"
+              >
+                {t('updates.download')}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={checking}
+              onClick={() => void handleCheckUpdates()}
+              className="rounded-md border border-line bg-ink px-3 py-1.5 text-sm font-medium text-fg hover:border-fg/40 hover:bg-panel disabled:opacity-50"
+            >
+              {checking ? t('updates.checking') : t('updates.check')}
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

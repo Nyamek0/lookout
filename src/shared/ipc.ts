@@ -1,4 +1,4 @@
-import type { LogChunk, MonitorFocus, Preferences, PreferencesPatch, PreparedAction, ServerConfig, Snapshot, SshHost } from './types'
+import type { LogChunk, MonitorFocus, Preferences, PreferencesPatch, PreparedAction, ServerConfig, Snapshot, SshHost, UpdateInfo } from './types'
 
 export interface NewServerInput extends Omit<ServerConfig, 'id'> {
   /** Passphrase or password: handed to the system keychain, never stored or sent back. */
@@ -62,6 +62,10 @@ export interface LookoutApi {
     setLanguage(language: 'en' | 'fr'): Promise<void>
     testNotification(): Promise<void>
   }
+  updates: {
+    check(): Promise<UpdateInfo>
+    openReleasePage(url?: string): Promise<void>
+  }
   app: {
     onNavigate(cb: (target: { serverId: string; projectId?: string }) => void): Unsubscribe
   }
@@ -88,7 +92,9 @@ export const INVOKE_CHANNELS = [
   'settings:update',
   'settings:getLanguage',
   'settings:setLanguage',
-  'settings:testNotification'
+  'settings:testNotification',
+  'updates:check',
+  'updates:openReleasePage'
 ] as const
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]
 

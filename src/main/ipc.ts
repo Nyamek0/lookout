@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { IpcMain } from 'electron'
 import { EVENT_CHANNELS, INVOKE_CHANNELS, type InvokeChannel, type NewServerInput } from '../shared/ipc'
-import type { MonitorFocus, Preferences, PreferencesPatch, ServerConfig, Snapshot } from '../shared/types'
+import type { MonitorFocus, Preferences, PreferencesPatch, ServerConfig, Snapshot, UpdateInfo } from '../shared/types'
 import type { ActionService } from './actions/actions'
 import { fetchLogs, followLogs, type LogFollows } from './logs/logs'
 import type { Exec } from './ssh/connection'
@@ -9,6 +9,7 @@ import type { HostKeyPrompter } from './ssh/prompter'
 import { parseSshConfig } from './ssh/sshConfig'
 import type { SecretStore } from './store/secrets'
 import type { ServerStore } from './store/serverStore'
+import { checkForUpdates } from './updates/checker'
 
 export interface IpcServices {
   serverStore: ServerStore
@@ -35,6 +36,9 @@ export interface IpcServices {
     setLanguage(language: 'en' | 'fr'): Promise<void>
   }
   showTestNotification?: () => void
+  appVersion?: string
+  checkForUpdates?: () => Promise<UpdateInfo>
+  openReleasePage?: (url: string) => Promise<void>
   prompter: HostKeyPrompter
   emit(channel: string, payload: unknown): void
 }
@@ -201,6 +205,17 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
     'settings:setLanguage': async (language) => s.settings.setLanguage(language === 'fr' ? 'fr' : 'en'),
     'settings:testNotification': async () => {
       s.showTestNotification?.()
+    },
+    'updates:check': async () => {
+      if (s.checkForUpdates) return s.checkForUpdates()
+      return checkForUpdates({ currentVersion: s.appVersion ?? '0.0.0' })
+    },
+    'updates:openReleasePage': async (url) => {
+      const target =
+        typeof url === 'string' && url.startsWith('https://github.com/Nyamek0/lookout/releases')
+          ? url
+          : 'https://github.com/Nyamek0/lookout/releases'
+      await s.openReleasePage?.(target)
     }
   }
 }

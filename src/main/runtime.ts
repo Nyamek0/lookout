@@ -2,10 +2,10 @@ import { lookup } from 'node:dns/promises'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { Menu, nativeImage, Notification, Tray } from 'electron'
+import { app, Menu, nativeImage, Notification, shell, Tray } from 'electron'
 import { fleetSummary } from '../shared/fleet'
 import { EVENT_CHANNELS } from '../shared/ipc'
-import type { ServerConfig, Snapshot } from '../shared/types'
+import type { ServerConfig, Snapshot, UpdateInfo } from '../shared/types'
 import { ActionService } from './actions/actions'
 import { AlertTracker } from './alerts/alerts'
 import { defaultDomainDeps } from './collect/domains'
@@ -57,6 +57,9 @@ export function createRuntime(o: {
   focusWindow?: () => void
   quitApp?: () => void
   trayController?: TrayController
+  appVersion?: string
+  openReleasePage?: (url: string) => Promise<void>
+  checkForUpdates?: () => Promise<UpdateInfo>
 }) {
   const serverStore = new ServerStore(join(o.userData, 'servers.json'))
   const knownHosts = new KnownHosts(join(o.userData, 'known_hosts.json'))
@@ -232,6 +235,9 @@ export function createRuntime(o: {
     },
     settings,
     showTestNotification: () => notifier.notifyTest(),
+    appVersion: o.appVersion ?? (typeof app !== 'undefined' && app ? app.getVersion() : '0.0.0'),
+    openReleasePage: o.openReleasePage ?? (async (url: string) => { await shell.openExternal(url) }),
+    checkForUpdates: o.checkForUpdates,
     prompter,
     emit: o.send
   }

@@ -235,5 +235,19 @@
     "methodCi": "CI Image",
     "methodGit": "Git Pull",
     "methodFile": "File Copy"
+  },
+  "updates": {
+    "title": "Updates",
+    "banner": "Lookout v{{version}} is available!",
+    "download": "Download",
+    "dismiss": "Dismiss",
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You are using the latest version (v{{version}}).",
+    "available": "A new version is available: v{{version}}",
+    "failed": "Could not check for updates. Check your connection.",
+    "current": "Current version: v{{version}}",
+    "notifyTitle": "Lookout v{{version}} is available",
+    "notifyBody": "Click to download the latest update."
   }
 }

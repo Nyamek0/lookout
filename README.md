@@ -21,6 +21,7 @@ health, CPU/RAM/disk, projects, containers, domains and logs, with **nothing to 
 - Lets you read logs (search, full screen, load older history) and restart containers, always after a
   confirmation that shows the exact command.
 - **Settings screen**: switch languages (English / French), toggle notification levels (errors, warnings, recoveries), and configure tray behavior on close.
+- **Update notifications**: automatically checks GitHub Releases for newer versions and notifies you with a direct download link, plus a manual "Check for updates" option in Settings.
 - It never deploys anything: you keep committing and pushing from your own machine.
 
 ## Download

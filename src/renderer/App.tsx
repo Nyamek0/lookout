@@ -4,6 +4,7 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { HostKeyPrompt } from './components/HostKeyPrompt'
 import { LogViewer } from './components/LogViewer'
 import { Shell } from './components/Shell'
+import { UpdateBanner } from './components/UpdateBanner'
 import { i18n } from './i18n'
 import { AddServer } from './screens/AddServer'
 import { Containers } from './screens/Containers'
@@ -15,6 +16,7 @@ import { ProjectPage } from './screens/ProjectPage'
 import { Projects } from './screens/Projects'
 import { Settings } from './screens/Settings'
 import { fleetStatus } from '../shared/fleet'
+import type { UpdateInfo } from '../shared/types'
 import { useAppStore } from './state/store'
 import { useRestart } from './state/useRestart'
 
@@ -36,7 +38,17 @@ function Content() {
   const [removing, setRemoving] = useState(false)
   const [logsFor, setLogsFor] = useState<string | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [dismissUpdate, setDismissUpdate] = useState(false)
   const restart = useRestart(activeId ?? '')
+
+  useEffect(() => {
+    void window.lookout?.updates?.check?.().then((info) => {
+      if (info?.hasUpdate) {
+        setUpdateInfo(info)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     let off = () => {}
@@ -239,6 +251,13 @@ function Content() {
               {t('restart.dismiss')}
             </button>
           </div>
+        )}
+        {updateInfo && !dismissUpdate && (
+          <UpdateBanner
+            info={updateInfo}
+            onDismiss={() => setDismissUpdate(true)}
+            onDownload={() => void window.lookout?.updates.openReleasePage(updateInfo.releaseUrl)}
+          />
         )}
         {body}
       </Shell>

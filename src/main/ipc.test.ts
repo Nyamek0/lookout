@@ -178,6 +178,36 @@ describe('ipc handlers', () => {
     expect(chunk.lines).toEqual(['2026-10-21T10:00:01.000000000Z hello'])
   })
 
+  it('checks for updates and opens the release page safely', async () => {
+    const opened: string[] = []
+    const { handlers } = setup({
+      checkForUpdates: async () => ({
+        currentVersion: '0.1.1',
+        latestVersion: '0.2.0',
+        hasUpdate: true,
+        releaseUrl: 'https://github.com/Nyamek0/lookout/releases/tag/v0.2.0'
+      }),
+      openReleasePage: async (url) => {
+        opened.push(url)
+      }
+    })
+
+    const updateInfo = await handlers['updates:check']!()
+    expect(updateInfo).toEqual({
+      currentVersion: '0.1.1',
+      latestVersion: '0.2.0',
+      hasUpdate: true,
+      releaseUrl: 'https://github.com/Nyamek0/lookout/releases/tag/v0.2.0'
+    })
+
+    await handlers['updates:openReleasePage']!('https://github.com/Nyamek0/lookout/releases/tag/v0.2.0')
+    expect(opened).toEqual(['https://github.com/Nyamek0/lookout/releases/tag/v0.2.0'])
+
+    // Falls back to safe releases URL if hostile URL is passed
+    await handlers['updates:openReleasePage']!('https://evil.com')
+    expect(opened[1]).toBe('https://github.com/Nyamek0/lookout/releases')
+  })
+
   it('streams logs to the renderer and stops on unfollow', async () => {
     let push: (c: string) => void = () => {}
     const stops: string[] = []

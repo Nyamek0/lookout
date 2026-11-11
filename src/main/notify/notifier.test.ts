@@ -173,4 +173,31 @@ describe('Notifier', () => {
       })
     )
   })
+
+  it('notifies about application updates in English and French', () => {
+    const show = vi.fn()
+    const onOpen = vi.fn()
+    const i18n = createMainI18n()
+    const notifier = new Notifier({
+      show,
+      t: (k, opts) => i18n.t(k, opts),
+      onNavigate: () => {},
+      getServerName: () => 'prod'
+    })
+
+    notifier.notifyUpdate({ version: '0.2.0', onOpen })
+    expect(show).toHaveBeenCalledTimes(1)
+    const callEn = show.mock.calls[0]![0]
+    expect(callEn.title).toBe('Lookout v0.2.0 is available')
+    expect(callEn.body).toContain('download')
+    expect(callEn.silent).toBe(false)
+    callEn.onClick()
+    expect(onOpen).toHaveBeenCalledTimes(1)
+
+    void i18n.changeLanguage('fr')
+    notifier.notifyUpdate({ version: '0.2.0' })
+    const callFr = show.mock.calls[1]![0]
+    expect(callFr.title).toBe('Lookout v0.2.0 est disponible')
+    expect(callFr.body).toContain('télécharger')
+  })
 })

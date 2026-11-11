@@ -54,6 +54,10 @@ function installApi(servers: ServerConfig[]) {
       getLanguage: async () => 'en',
       setLanguage: async () => {}
     },
+    updates: {
+      check: async () => ({ currentVersion: '0.2.0', latestVersion: '0.2.0', hasUpdate: false, releaseUrl: '' }),
+      openReleasePage: async () => {}
+    },
     app: {
       onNavigate: (cb: (t: { serverId?: string; projectId?: string }) => void) => {
         navCb = cb
@@ -213,5 +217,26 @@ describe('App', () => {
     // Switching back to overview resets logs
     await userEvent.click(screen.getByRole('button', { name: 'Overview' }))
     expect(screen.queryByRole('tab', { name: 'backend-api-1' })).not.toBeInTheDocument()
+  })
+
+  it('displays update banner and triggers download when an update is available', async () => {
+    const openReleasePage = vi.fn(async () => {})
+    installApi([server])
+    window.lookout.updates = {
+      check: async () => ({
+        currentVersion: '0.1.1',
+        latestVersion: '0.2.0',
+        hasUpdate: true,
+        releaseUrl: 'https://github.com/Nyamek0/lookout/releases/tag/v0.2.0'
+      }),
+      openReleasePage
+    }
+
+    render(<App />)
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.getByText(/0\.2\.0/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /download/i }))
+    expect(openReleasePage).toHaveBeenCalledWith('https://github.com/Nyamek0/lookout/releases/tag/v0.2.0')
   })
 })

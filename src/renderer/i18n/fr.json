@@ -235,5 +235,19 @@
     "methodCi": "Image CI",
     "methodGit": "Git Pull",
     "methodFile": "Copie de fichiers"
+  },
+  "updates": {
+    "title": "Mises à jour",
+    "banner": "Lookout v{{version}} est disponible !",
+    "download": "Télécharger",
+    "dismiss": "Ignorer",
+    "check": "Rechercher des mises à jour",
+    "checking": "Vérification…",
+    "upToDate": "Vous utilisez la dernière version (v{{version}}).",
+    "available": "Une nouvelle version est disponible : v{{version}}",
+    "failed": "Impossible de vérifier les mises à jour. Vérifiez votre connexion.",
+    "current": "Version actuelle : v{{version}}",
+    "notifyTitle": "Lookout v{{version}} est disponible",
+    "notifyBody": "Cliquez pour télécharger la dernière mise à jour."
   }
 }
