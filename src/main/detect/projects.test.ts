@@ -98,4 +98,51 @@ describe('detectProjects', () => {
     const { projects } = detectProjects({ ...empty, containers: [withDir], gitByDir: { '/opt/p': git }, diskByProject: { p: 1234 } })
     expect(projects[0]).toMatchObject({ git, diskBytes: 1234, deployMethod: 'git-pull', workingDir: '/opt/p' })
   })
+
+  it('factors domain certificate status into project health', () => {
+    const web = c({ id: 'w1w1w1w1w1w1', name: 'web', composeProject: 'my-app', publishedPorts: [{ host: 80, container: 80 }] })
+    const site: ProxySite = { hosts: ['app.example.com'], upstreams: [{ host: '127.0.0.1', port: 80 }] }
+
+    const expiredCheck: DomainCheck = {
+      host: 'app.example.com',
+      ips: ['1.2.3.4'],
+      matchesServer: true,
+      tls: { ok: false, error: 'certificate expired' }
+    }
+    const withExpired = detectProjects({
+      ...empty,
+      containers: [web],
+      sites: [site],
+      domainChecks: { 'app.example.com': expiredCheck }
+    })
+    expect(withExpired.projects[0]!.status).toBe('error')
+
+    const expiringCheck: DomainCheck = {
+      host: 'app.example.com',
+      ips: ['1.2.3.4'],
+      matchesServer: true,
+      tls: { ok: true, daysLeft: 10 }
+    }
+    const withExpiring = detectProjects({
+      ...empty,
+      containers: [web],
+      sites: [site],
+      domainChecks: { 'app.example.com': expiringCheck }
+    })
+    expect(withExpiring.projects[0]!.status).toBe('warn')
+
+    const validCheck: DomainCheck = {
+      host: 'app.example.com',
+      ips: ['1.2.3.4'],
+      matchesServer: true,
+      tls: { ok: true, daysLeft: 60 }
+    }
+    const withValid = detectProjects({
+      ...empty,
+      containers: [web],
+      sites: [site],
+      domainChecks: { 'app.example.com': validCheck }
+    })
+    expect(withValid.projects[0]!.status).toBe('ok')
+  })
 })

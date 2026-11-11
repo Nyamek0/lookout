@@ -164,6 +164,9 @@
     "stopped": "Container stopped",
     "restarting": "Container restarting",
     "unhealthy": "Container unhealthy",
+    "certExpired": "SSL certificate expired",
+    "certExpiring_one": "SSL certificate expires in 1 day",
+    "certExpiring_other": "SSL certificate expires in {{days}} days",
     "testTitle": "Lookout",
     "testBody": "Notifications are working properly"
   },

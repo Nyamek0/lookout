@@ -126,4 +126,51 @@ describe('Notifier', () => {
       })
     )
   })
+
+  it('formats cert-expired and cert-expiring notifications', () => {
+    const show = vi.fn()
+    const i18n = createMainI18n()
+    const notifier = new Notifier({
+      show,
+      t: (k, opts) => i18n.t(k, opts),
+      onNavigate: () => {},
+      getServerName: () => 'prod-paris'
+    })
+
+    notifier.notify({
+      serverId: 's1',
+      level: 'error',
+      items: [
+        {
+          projectId: 'p1',
+          projectName: 'shop',
+          issue: { kind: 'cert-expired', status: 'error', domain: 'shop.example.com' }
+        }
+      ]
+    })
+    expect(show).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: 'prod-paris: shop is down',
+        body: expect.stringMatching(/SSL certificate expired.*shop\.example\.com/)
+      })
+    )
+
+    notifier.notify({
+      serverId: 's1',
+      level: 'warn',
+      items: [
+        {
+          projectId: 'p1',
+          projectName: 'shop',
+          issue: { kind: 'cert-expiring', status: 'warn', domain: 'shop.example.com', daysLeft: 5 }
+        }
+      ]
+    })
+    expect(show).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: 'prod-paris: warning on shop',
+        body: expect.stringMatching(/SSL certificate expires in 5 days.*shop\.example\.com/)
+      })
+    )
+  })
 })

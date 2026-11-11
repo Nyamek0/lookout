@@ -1,5 +1,5 @@
 import { containerStatus, withThresholds, worst } from '../../shared/status'
-import type { ContainerInfo, ContainerUsage, DomainCheck, GitInfo, Project } from '../../shared/types'
+import type { ContainerInfo, ContainerUsage, DomainCheck, GitInfo, Project, Status } from '../../shared/types'
 import type { ProxySite } from '../collect/proxy'
 import { estimateDeployMethod } from './deployMethod'
 
@@ -21,6 +21,13 @@ function serves(c: ContainerInfo, upstream: { host: string; port: number }): boo
 }
 
 const unchecked = (host: string): DomainCheck => ({ host, ips: [], matchesServer: null, tls: null })
+
+function domainTlsStatus(d: DomainCheck): Status {
+  if (!d.tls) return 'neutral'
+  if (!d.tls.ok || (d.tls.daysLeft !== undefined && d.tls.daysLeft < 0)) return 'error'
+  if (d.tls.daysLeft !== undefined && d.tls.daysLeft <= 14) return 'warn'
+  return 'ok'
+}
 
 export function detectProjects(i: DetectInput): { projects: Project[]; undetected: string[] } {
   const groups = new Map<string, { name: string; kind: Project['kind']; containers: ContainerInfo[] }>()
@@ -65,7 +72,7 @@ export function detectProjects(i: DetectInput): { projects: Project[]; undetecte
       deployMethod: estimateDeployMethod(g.containers.map((c) => c.image), git),
       diskBytes: i.diskByProject[g.name] ?? null,
       usage,
-      status: withThresholds(worst(g.containers.map(containerStatus)), {
+      status: withThresholds(worst([worst(g.containers.map(containerStatus)), worst([...domains.values()].map(domainTlsStatus))]), {
         cpuPercent: usage.cpuPercent,
         memPercentOfHost
       })
@@ -77,18 +84,20 @@ export function detectProjects(i: DetectInput): { projects: Project[]; undetecte
     if (claimed.has(site)) continue
     if (site.upstreams.length === 0 && site.staticRoot) {
       const git = i.gitByDir[site.staticRoot] ?? null
+      const staticDomains = site.hosts.map((h) => i.domainChecks[h] ?? unchecked(h))
+      const tlsStatus = worst(staticDomains.map(domainTlsStatus))
       projects.push({
         id: `static:${site.hosts[0]}`,
         name: site.staticRoot.split('/').filter(Boolean).pop() ?? site.hosts[0]!,
         kind: 'static',
         containerIds: [],
-        domains: site.hosts.map((h) => i.domainChecks[h] ?? unchecked(h)),
+        domains: staticDomains,
         staticRoot: site.staticRoot,
         git,
         deployMethod: estimateDeployMethod([], git),
         diskBytes: null,
         usage: { cpuPercent: 0, memBytes: 0 },
-        status: 'neutral'
+        status: tlsStatus === 'error' || tlsStatus === 'warn' ? tlsStatus : 'neutral'
       })
     } else if (site.upstreams.length > 0) {
       const u = site.upstreams[0]!

@@ -1,7 +1,16 @@
 import { DEFAULT_THRESHOLDS, type Thresholds } from './thresholds'
 import type { ConnectErrorKind, ContainerInfo, HostMetrics, Project, Snapshot, SnapshotWarning, Status } from './types'
 
-export type ProjectIssueKind = 'stopped' | 'restarting' | 'unhealthy' | 'paused' | 'cpu' | 'mem' | 'error'
+export type ProjectIssueKind =
+  | 'stopped'
+  | 'restarting'
+  | 'unhealthy'
+  | 'paused'
+  | 'cpu'
+  | 'mem'
+  | 'cert-expired'
+  | 'cert-expiring'
+  | 'error'
 
 export interface ProjectIssue {
   kind: ProjectIssueKind
@@ -9,6 +18,8 @@ export interface ProjectIssue {
   container?: string
   exitCode?: number
   percent?: number
+  domain?: string
+  daysLeft?: number
 }
 
 export type ServerIssueKind =
@@ -56,6 +67,16 @@ export function projectIssues(
       }
     } else if (c.state === 'paused') {
       issues.push({ kind: 'paused', status: 'warn', container: c.name })
+    }
+  }
+
+  for (const d of project.domains) {
+    if (d.tls) {
+      if (!d.tls.ok || (d.tls.daysLeft !== undefined && d.tls.daysLeft < 0)) {
+        issues.push({ kind: 'cert-expired', status: 'error', domain: d.host })
+      } else if (d.tls.daysLeft !== undefined && d.tls.daysLeft <= 14) {
+        issues.push({ kind: 'cert-expiring', status: 'warn', domain: d.host, daysLeft: d.tls.daysLeft })
+      }
     }
   }
 

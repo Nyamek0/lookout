@@ -164,6 +164,9 @@
     "stopped": "Conteneur arrêté",
     "restarting": "Conteneur en redémarrage",
     "unhealthy": "Conteneur non fonctionnel",
+    "certExpired": "Certificat SSL expiré",
+    "certExpiring_one": "Certificat SSL expire dans 1 jour",
+    "certExpiring_other": "Certificat SSL expire dans {{days}} jours",
     "testTitle": "Lookout",
     "testBody": "Les notifications fonctionnent correctement"
   },

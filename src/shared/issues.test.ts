@@ -86,6 +86,33 @@ describe('projectIssues', () => {
     const issues = projectIssues(p, [container()], { ...fakeHost, memTotalBytes: 0 })
     expect(issues).toEqual([{ kind: 'cpu', status: 'warn', percent: 75 }])
   })
+
+  it('reports expired SSL certificate as an error issue', () => {
+    const p = project({
+      status: 'error',
+      domains: [{ host: 'api.example.com', ips: ['1.2.3.4'], matchesServer: true, tls: { ok: false, error: 'certificate expired' } }]
+    })
+    const issues = projectIssues(p, [container()], fakeHost)
+    expect(issues).toContainEqual({
+      kind: 'cert-expired',
+      status: 'error',
+      domain: 'api.example.com'
+    })
+  })
+
+  it('reports expiring SSL certificate (<= 14 days) as a warning issue', () => {
+    const p = project({
+      status: 'warn',
+      domains: [{ host: 'web.example.com', ips: ['1.2.3.4'], matchesServer: true, tls: { ok: true, daysLeft: 7 } }]
+    })
+    const issues = projectIssues(p, [container()], fakeHost)
+    expect(issues).toContainEqual({
+      kind: 'cert-expiring',
+      status: 'warn',
+      domain: 'web.example.com',
+      daysLeft: 7
+    })
+  })
 })
 
 describe('serverIssues', () => {

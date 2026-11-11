@@ -90,6 +90,16 @@ export class Notifier {
     if (kind === 'mem' || kind === 'host-mem') {
       return this.o.t('notify.mem', { percent: (issue as { percent?: number }).percent ?? 0 })
     }
+    if (kind === 'cert-expired') {
+      const domain = (issue as { domain?: string }).domain
+      return domain ? `${this.o.t('notify.certExpired')} (${domain})` : this.o.t('notify.certExpired')
+    }
+    if (kind === 'cert-expiring') {
+      const domain = (issue as { domain?: string }).domain
+      const days = (issue as { daysLeft?: number }).daysLeft ?? 0
+      const text = this.o.t('notify.certExpiring', { days, count: days })
+      return domain ? `${text} (${domain})` : text
+    }
     if ('message' in issue && issue.message) {
       return String(issue.message)
     }
