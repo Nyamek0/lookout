@@ -62,12 +62,12 @@ export function Containers({
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line text-xs font-semibold uppercase tracking-wider text-dim">
               <tr>
-                <th className="py-2.5 pl-4 pr-2">Conteneur</th>
+                <th className="py-2.5 pl-4 pr-2">{t('containers.container')}</th>
                 <th className="px-3 py-2.5">{t('containers.image')}</th>
                 <th className="px-3 py-2.5">{t('containers.ports')}</th>
                 <th className="px-3 py-2.5">{t('containers.state')}</th>
                 <th className="px-3 py-2.5">{t('containers.project')}</th>
-                <th className="py-2.5 pl-2 pr-4 text-right">Actions</th>
+                <th className="py-2.5 pl-2 pr-4 text-right">{t('containers.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">

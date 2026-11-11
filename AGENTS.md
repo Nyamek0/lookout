@@ -45,8 +45,8 @@ i18next, recharts, `ssh2`, `@napi-rs/keyring`. Tests: Vitest 4 + Testing Library
   - `ipc.ts`: IPC handlers, which validate every argument. `runtime.ts`: wires the services together.
     `index.ts`: entry point (starts the demo when `LOOKOUT_DEMO=1`).
 - `src/preload/index.ts`: exposes `window.lookout` through `contextBridge`, and nothing else.
-- `src/renderer`: React UI (`screens/` including Fleet, Settings, Home, ProjectPage, Projects, AddServer; `components/`, `state/`, `i18n/`). It can only call `window.lookout`.
-- `src/shared`: types and rules used by both sides. `issues.ts` evaluates project and server issues. `fleet.ts` computes fleet summaries and worst status. `ipc.ts` defines `LookoutApi` plus the invoke/event channel
+- `src/renderer`: React UI (`screens/` including Fleet, Settings, Home, ProjectPage, Projects, Containers, Databases, Deployments, AddServer; `components/`, `state/`, `i18n/`). It can only call `window.lookout`.
+- `src/shared`: types and rules used by both sides. `issues.ts` evaluates project and server issues. `databases.ts` detects database engines. `fleet.ts` computes fleet summaries and worst status. `ipc.ts` defines `LookoutApi` plus the invoke/event channel
   names. `brand.ts` holds the product name.
 - `test/fixtures`: real-looking command outputs with generic names. `test/support/fakeVps.ts` is the fake SSH server.
 - `scripts/`: demo server, smoke test, `afterPack.cjs` (ad hoc mac signing), and the packaging test.

@@ -162,4 +162,56 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /settings/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /test notification/i })).toBeInTheDocument()
   })
+
+  it('navigates between overview, containers, databases, and deployments tabs', async () => {
+    installApi([server])
+    render(<App />)
+    await screen.findByText('vps-main')
+    act(() => push(snapshot))
+
+    // Containers tab
+    await userEvent.click(screen.getByRole('button', { name: 'Containers' }))
+    expect(await screen.findByRole('heading', { name: 'Containers' })).toBeInTheDocument()
+    expect(screen.getByText('backend-api-1')).toBeInTheDocument()
+
+    // Logs from Containers tab
+    await userEvent.click(screen.getByRole('button', { name: 'Logs' }))
+    expect(await screen.findByRole('tab', { name: 'backend-api-1' })).toBeInTheDocument()
+
+    // Databases tab
+    await userEvent.click(screen.getByRole('button', { name: 'Databases' }))
+    expect(await screen.findByText(/No databases detected/i)).toBeInTheDocument()
+
+    // Push snapshot with a database container
+    act(() =>
+      push({
+        ...snapshot,
+        containers: [
+          container,
+          {
+            id: 'pg1',
+            name: 'postgres-db',
+            image: 'postgres:16',
+            service: 'db',
+            composeProject: 'backend',
+            state: 'running',
+            exitCode: 0,
+            restartPolicy: 'always',
+            publishedPorts: [{ host: 5432, container: 5432 }]
+          }
+        ]
+      })
+    )
+    expect(await screen.findByRole('heading', { name: 'Databases' })).toBeInTheDocument()
+    expect(screen.getByText('postgres-db')).toBeInTheDocument()
+
+    // Deployments tab
+    await userEvent.click(screen.getByRole('button', { name: 'Deployments' }))
+    expect(await screen.findByRole('heading', { name: 'Deployments' })).toBeInTheDocument()
+    expect(screen.getByText('File Copy')).toBeInTheDocument()
+
+    // Switching back to overview resets logs
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }))
+    expect(screen.queryByRole('tab', { name: 'backend-api-1' })).not.toBeInTheDocument()
+  })
 })

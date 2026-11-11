@@ -10,6 +10,11 @@ health, CPU/RAM/disk, projects, containers, domains and logs, with **nothing to 
 - Connects to your servers over SSH (agent, key file or password; secrets stay in the OS keychain).
 - Finds your projects by itself: Docker Compose projects, containers, the domains your reverse proxy
   serves them on (Caddy and nginx), Git info and static sites.
+- **SSL / TLS certificate monitoring**: automatically checks domain certificate expiry dates and warns when a certificate is expiring or expired.
+- **Dedicated server tabs**:
+  - **Containers**: instant filter search, state, mapped ports, parent project badge, and quick access to logs or restart.
+  - **Databases**: automatic detection of database engines (PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse, Elasticsearch, RabbitMQ) with health, ports, and volume disk usage.
+  - **Deployments**: clear overview of deployment methods (CI Image, Git Pull, File Copy) with repository, active branch, and last commit hash/message.
 - **Fleet overview**: summarizes all your VPS servers at a glance, sorting problem servers to the top.
 - **Status icon in menu bar / system tray**: reflects the worst status of your fleet, with quick access to each server.
 - **Desktop notifications**: alerts you when a project or server fails (with debounce to avoid spam) and takes you directly to the issue on click.

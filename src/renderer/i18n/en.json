@@ -50,6 +50,9 @@
   "nav": {
     "overview": "Overview",
     "projects": "Projects",
+    "containers": "Containers",
+    "databases": "Databases",
+    "deployments": "Deployments",
     "connecting": "Connecting…",
     "welcome": "Add your first server to get started."
   },
@@ -198,13 +201,15 @@
     "searchPlaceholder": "Filter containers…",
     "empty": "No containers found on this server.",
     "noMatches": "No containers match your search.",
+    "container": "Container",
     "image": "Image",
     "ports": "Ports",
     "state": "State",
     "project": "Project",
     "standalone": "Standalone",
     "logs": "Logs",
-    "restart": "Restart"
+    "restart": "Restart",
+    "actions": "Actions"
   },
   "databases": {
     "title": "Databases",
@@ -220,10 +225,12 @@
   "deployments": {
     "title": "Deployments",
     "empty": "No projects deployed on this server.",
+    "project": "Project",
     "method": "Method",
     "branch": "Branch",
     "commit": "Last commit",
     "remote": "Repository",
+    "action": "Action",
     "open": "View project",
     "methodCi": "CI Image",
     "methodGit": "Git Pull",

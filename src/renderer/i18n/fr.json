@@ -50,6 +50,9 @@
   "nav": {
     "overview": "Vue d'ensemble",
     "projects": "Projets",
+    "containers": "Conteneurs",
+    "databases": "Bases",
+    "deployments": "Déploiements",
     "connecting": "Connexion…",
     "welcome": "Ajoutez votre premier serveur pour commencer."
   },
@@ -198,13 +201,15 @@
     "searchPlaceholder": "Filtrer les conteneurs…",
     "empty": "Aucun conteneur trouvé sur ce serveur.",
     "noMatches": "Aucun conteneur ne correspond à votre recherche.",
+    "container": "Conteneur",
     "image": "Image",
     "ports": "Ports",
     "state": "État",
     "project": "Projet",
     "standalone": "Indépendant",
     "logs": "Logs",
-    "restart": "Redémarrer"
+    "restart": "Redémarrer",
+    "actions": "Actions"
   },
   "databases": {
     "title": "Bases de données",
@@ -220,10 +225,12 @@
   "deployments": {
     "title": "Déploiements",
     "empty": "Aucun projet déployé sur ce serveur.",
+    "project": "Projet",
     "method": "Méthode",
     "branch": "Branche",
     "commit": "Dernier commit",
     "remote": "Dépôt",
+    "action": "Action",
     "open": "Voir le projet",
     "methodCi": "Image CI",
     "methodGit": "Git Pull",

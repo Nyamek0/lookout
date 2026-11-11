@@ -36,12 +36,12 @@ export function Deployments({
         <table className="w-full text-left text-sm">
           <thead className="border-b border-line text-xs font-semibold uppercase tracking-wider text-dim">
             <tr>
-              <th className="py-2.5 pl-4 pr-2">Projet</th>
+              <th className="py-2.5 pl-4 pr-2">{t('deployments.project')}</th>
               <th className="px-3 py-2.5">{t('deployments.method')}</th>
               <th className="px-3 py-2.5">{t('deployments.remote')}</th>
               <th className="px-3 py-2.5">{t('deployments.branch')}</th>
               <th className="px-3 py-2.5">{t('deployments.commit')}</th>
-              <th className="py-2.5 pl-2 pr-4 text-right">Action</th>
+              <th className="py-2.5 pl-2 pr-4 text-right">{t('deployments.action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line/60">

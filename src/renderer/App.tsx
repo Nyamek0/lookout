@@ -6,6 +6,9 @@ import { LogViewer } from './components/LogViewer'
 import { Shell } from './components/Shell'
 import { i18n } from './i18n'
 import { AddServer } from './screens/AddServer'
+import { Containers } from './screens/Containers'
+import { Databases } from './screens/Databases'
+import { Deployments } from './screens/Deployments'
 import { Fleet } from './screens/Fleet'
 import { Home } from './screens/Home'
 import { ProjectPage } from './screens/ProjectPage'
@@ -19,6 +22,9 @@ type View =
   | { name: 'fleet' }
   | { name: 'overview' }
   | { name: 'projects' }
+  | { name: 'containers' }
+  | { name: 'databases' }
+  | { name: 'deployments' }
   | { name: 'project'; id: string }
   | { name: 'add' }
   | { name: 'settings' }
@@ -91,11 +97,12 @@ function Content() {
     setView({ name: 'overview' })
   }
 
-  const tab = (name: 'overview' | 'projects', label: string) => (
+  type ServerTab = 'overview' | 'projects' | 'containers' | 'databases' | 'deployments'
+  const tab = (name: ServerTab, label: string) => (
     <button
       type="button"
       onClick={() => {
-        setView(name === 'overview' ? { name: 'overview' } : { name: 'projects' })
+        setView({ name } as View)
         setLogsFor(null)
       }}
       aria-current={view.name === name ? 'page' : undefined}
@@ -145,6 +152,9 @@ function Content() {
         <nav className="flex gap-5 border-b border-line">
           {tab('overview', t('nav.overview'))}
           {tab('projects', t('nav.projects'))}
+          {tab('containers', t('nav.containers'))}
+          {tab('databases', t('nav.databases'))}
+          {tab('deployments', t('nav.deployments'))}
         </nav>
         {view.name === 'overview' && (
           <Home
@@ -155,24 +165,47 @@ function Content() {
           />
         )}
         {view.name === 'projects' && <Projects snapshot={snapshot} onOpen={(id) => setView({ name: 'project', id })} />}
+        {view.name === 'containers' && (
+          <Containers
+            snapshot={snapshot}
+            onOpenLogs={setLogsFor}
+            onRestart={(ids) => void restart.request(ids)}
+            onOpenProject={(id) => setView({ name: 'project', id })}
+          />
+        )}
+        {view.name === 'databases' && (
+          <Databases
+            snapshot={snapshot}
+            onOpenProject={(id) => setView({ name: 'project', id })}
+            onOpenLogs={setLogsFor}
+          />
+        )}
+        {view.name === 'deployments' && (
+          <Deployments
+            snapshot={snapshot}
+            onOpenProject={(id) => setView({ name: 'project', id })}
+          />
+        )}
         {view.name === 'project' && (
-          <>
-            <ProjectPage
-              snapshot={snapshot}
-              projectId={view.id}
-              onOpenLogs={setLogsFor}
-              onRestart={(ids) => void restart.request(ids)}
-            />
-            {logsFor && projectContainers.length > 0 && (
-              <LogViewer
-                serverId={snapshot.serverId}
-                containers={projectContainers}
-                initialContainerId={logsFor}
-                fullscreen={fullscreen}
-                onToggleFullscreen={() => setFullscreen((f) => !f)}
-              />
-            )}
-          </>
+          <ProjectPage
+            snapshot={snapshot}
+            projectId={view.id}
+            onOpenLogs={setLogsFor}
+            onRestart={(ids) => void restart.request(ids)}
+          />
+        )}
+        {logsFor && (
+          <LogViewer
+            serverId={snapshot.serverId}
+            containers={
+              project && projectContainers.length > 0
+                ? projectContainers
+                : snapshot.containers.map((c) => ({ id: c.id, name: c.name }))
+            }
+            initialContainerId={logsFor}
+            fullscreen={fullscreen}
+            onToggleFullscreen={() => setFullscreen((f) => !f)}
+          />
         )}
       </div>
     )

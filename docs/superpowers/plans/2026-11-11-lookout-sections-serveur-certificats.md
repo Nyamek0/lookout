@@ -1,6 +1,6 @@
 # lookout : sections Conteneurs, Bases, Déploiements et surveillance SSL/TLS (plan)
 
-Date : 2026-11-11 · Statut : **validé** · Base : `main` @ `5e12745` (v0.1.1).
+Date : 2026-11-11 · Statut : **terminé** · Base : `main` @ `5e12745` (v0.1.1).
 
 ---
 

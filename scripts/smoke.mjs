@@ -109,10 +109,22 @@ try {
   await click('Cancel')
   await until('the dialog to close', async () => !(await run(`!!document.querySelector('[role=dialog]')`)))
 
+  await until('the Containers tab', () => click('Containers'))
+  await until('containers listing', async () => (await text())?.includes('shop-queue-1'))
+
+  await until('the Databases tab', () => click('Databases'))
+  await until('databases listing', async () => (await text())?.includes('Databases'))
+
+  await until('the Deployments tab', () => click('Deployments'))
+  await until('deployments listing', async () => (await text())?.includes('CI Image'))
+
+  await until('the Overview tab', () => click('Overview'))
+  await until('return to overview', async () => (await text())?.includes('WHO IS CONSUMING'))
+
   if (failures.length) throw new Error(failures.join('\n'))
   failures.push('done')
   clearTimeout(watchdog)
-  finish(0, 'OK: host key prompt, fleet overview, live home screen, project page and restart confirmation all work')
+  finish(0, 'OK: host key prompt, fleet overview, live home screen, project page, server tabs and restart confirmation all work')
 } catch (e) {
   clearTimeout(watchdog)
   finish(1, `FAIL: ${e.message}`)
