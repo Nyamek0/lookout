@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { DEFAULT_THRESHOLDS } from '../../shared/thresholds'
-import type { Project } from '../../shared/types'
+import { projectIssues } from '../../shared/issues'
+import type { HostMetrics, Project } from '../../shared/types'
 import { formatBytes, formatPercent } from '../format'
 import { StatusDot } from './StatusDot'
 
@@ -8,8 +8,15 @@ import { StatusDot } from './StatusDot'
 function cause(p: Project, hostMemTotalBytes: number, errorLabel: string): string | null {
   if (p.status === 'error') return errorLabel
   if (p.status !== 'warn') return null
-  if (p.usage.cpuPercent > DEFAULT_THRESHOLDS.cpuPercent) return `CPU ${formatPercent(p.usage.cpuPercent)}`
-  return `RAM ${formatPercent(hostMemTotalBytes ? (p.usage.memBytes / hostMemTotalBytes) * 100 : 0)}`
+  const host = hostMemTotalBytes > 0 ? ({ memTotalBytes: hostMemTotalBytes } as HostMetrics) : null
+  const issues = projectIssues(p, [], host)
+  const top = issues[0]
+  if (!top) return null
+  if (top.kind === 'cpu') return `CPU ${formatPercent(p.usage.cpuPercent)}`
+  if (top.kind === 'mem') {
+    return `RAM ${formatPercent(hostMemTotalBytes ? (p.usage.memBytes / hostMemTotalBytes) * 100 : 0)}`
+  }
+  return null
 }
 
 export function ConsumptionList({
