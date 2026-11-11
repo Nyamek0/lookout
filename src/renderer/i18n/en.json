@@ -192,5 +192,18 @@
     "waiting": "Waiting for first snapshot…",
     "ago": "{{seconds}}s ago",
     "moreIssues": "+{{count}} more"
+  },
+  "containers": {
+    "title": "Containers",
+    "searchPlaceholder": "Filter containers…",
+    "empty": "No containers found on this server.",
+    "noMatches": "No containers match your search.",
+    "image": "Image",
+    "ports": "Ports",
+    "state": "State",
+    "project": "Project",
+    "standalone": "Standalone",
+    "logs": "Logs",
+    "restart": "Restart"
   }
 }

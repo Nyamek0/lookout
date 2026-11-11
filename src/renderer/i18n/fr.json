@@ -192,5 +192,18 @@
     "waiting": "En attente du premier instantané…",
     "ago": "il y a {{seconds}} s",
     "moreIssues": "+{{count}} autres"
+  },
+  "containers": {
+    "title": "Conteneurs",
+    "searchPlaceholder": "Filtrer les conteneurs…",
+    "empty": "Aucun conteneur trouvé sur ce serveur.",
+    "noMatches": "Aucun conteneur ne correspond à votre recherche.",
+    "image": "Image",
+    "ports": "Ports",
+    "state": "État",
+    "project": "Projet",
+    "standalone": "Indépendant",
+    "logs": "Logs",
+    "restart": "Redémarrer"
   }
 }
