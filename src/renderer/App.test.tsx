@@ -34,14 +34,34 @@ const retry = vi.fn(async (_id: string) => {})
 const remove = vi.fn(async (_id: string) => {})
 
 function installApi(servers: ServerConfig[]) {
+  let navCb: ((t: { serverId?: string; projectId?: string }) => void) | undefined
+  const setFocus = vi.fn(async () => {})
   window.lookout = {
     servers: { list: async () => servers, importSshConfig: async () => [], add: vi.fn(), remove },
-    monitor: { onSnapshot: (cb: (s: Snapshot) => void) => ((push = cb), () => {}), setActive: async () => {}, retry },
+    monitor: {
+      onSnapshot: (cb: (s: Snapshot) => void) => ((push = cb), () => {}),
+      latest: async () => [],
+      setFocus,
+      setActive: async () => {},
+      retry
+    },
     hostKey: { onPrompt: () => () => {}, onChanged: () => () => {}, answer: async () => {} },
     logs: { fetch: async () => ({ lines: [], oldest: undefined }), follow: async () => () => {} },
     actions: { prepareRestart, confirm },
-    settings: { getLanguage: async () => 'en', setLanguage: async () => {} }
+    settings: {
+      get: async () => ({ language: 'en', notifications: { enabled: true, warnings: false, recoveries: true }, keepInTray: true }),
+      update: async () => ({ language: 'en', notifications: { enabled: true, warnings: false, recoveries: true }, keepInTray: true }),
+      getLanguage: async () => 'en',
+      setLanguage: async () => {}
+    },
+    app: {
+      onNavigate: (cb: (t: { serverId?: string; projectId?: string }) => void) => {
+        navCb = cb
+        return () => {}
+      }
+    }
   } as unknown as LookoutApi
+  return { triggerNavigate: (t: { serverId?: string; projectId?: string }) => navCb?.(t), setFocus }
 }
 
 beforeEach(() => {
@@ -122,5 +142,16 @@ describe('App', () => {
     await userEvent.click(await screen.findByText('backend'))
     await userEvent.click(await screen.findByRole('button', { name: 'Logs' }))
     expect(await screen.findByRole('tab', { name: 'backend-api-1' })).toBeInTheDocument()
+  })
+
+  it('navigates to project page when receiving onNavigate with server and project', async () => {
+    const { triggerNavigate } = installApi([server])
+    render(<App />)
+    await screen.findByText('vps-main')
+    act(() => push(snapshot))
+    await screen.findByText('backend')
+
+    act(() => triggerNavigate({ serverId: 's1', projectId: 'compose:backend' }))
+    expect(await screen.findByRole('button', { name: 'Restart' })).toBeInTheDocument()
   })
 })

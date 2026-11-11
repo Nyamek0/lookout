@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LookoutApi } from '../../shared/ipc'
-import type { ServerConfig, Snapshot } from '../../shared/types'
+import { DEFAULT_PREFERENCES, type ServerConfig, type Snapshot } from '../../shared/types'
 import { useAppStore } from './store'
 
 const server = (id: string): ServerConfig => ({ id, name: id, host: 'h', port: 22, user: 'u', authType: 'agent' })
@@ -10,14 +10,25 @@ const snap = (serverId: string, status: Snapshot['status']): Snapshot => ({
   projects: [], containers: [], undetected: [], warnings: [], status
 })
 
-function installApi(servers: ServerConfig[]) {
+function installApi(servers: ServerConfig[], initialSnapshots: Snapshot[] = []) {
   let push: (s: Snapshot) => void = () => {}
   const setActive = vi.fn(async () => {})
+  const setFocus = vi.fn(async () => {})
+  const updateSettings = vi.fn(async (patch) => ({ ...DEFAULT_PREFERENCES, ...patch }))
   window.lookout = {
     servers: { list: async () => servers },
-    monitor: { onSnapshot: (cb: (s: Snapshot) => void) => ((push = cb), () => {}), setActive }
+    monitor: {
+      onSnapshot: (cb: (s: Snapshot) => void) => ((push = cb), () => {}),
+      latest: async () => initialSnapshots,
+      setFocus,
+      setActive
+    },
+    settings: {
+      get: async () => DEFAULT_PREFERENCES,
+      update: updateSettings
+    }
   } as unknown as LookoutApi
-  return { push: (s: Snapshot) => push(s), setActive }
+  return { push: (s: Snapshot) => push(s), setActive, setFocus, updateSettings }
 }
 
 describe('app store', () => {
@@ -88,5 +99,29 @@ describe('app store', () => {
     installApi([])
     await useAppStore.getState().init()
     expect(useAppStore.getState().activeId).toBeNull()
+  })
+
+  it('loads initial snapshots from latest() on init', async () => {
+    installApi([server('a')], [snap('a', 'ok')])
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().snapshots['a']?.status).toBe('ok')
+  })
+
+  it('sets focus and notifies monitor', async () => {
+    const api = installApi([server('a'), server('b')])
+    await useAppStore.getState().init()
+    useAppStore.getState().setFocus({ kind: 'fleet' })
+    expect(useAppStore.getState().focus).toEqual({ kind: 'fleet' })
+    expect(api.setFocus).toHaveBeenCalledWith({ kind: 'fleet' })
+  })
+
+  it('loads and updates preferences', async () => {
+    const api = installApi([])
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().preferences).toEqual(DEFAULT_PREFERENCES)
+
+    await useAppStore.getState().updatePreferences({ keepInTray: false })
+    expect(api.updateSettings).toHaveBeenCalledWith({ keepInTray: false })
+    expect(useAppStore.getState().preferences.keepInTray).toBe(false)
   })
 })

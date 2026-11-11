@@ -12,11 +12,16 @@ import { Projects } from './screens/Projects'
 import { useAppStore } from './state/store'
 import { useRestart } from './state/useRestart'
 
-type View = { name: 'overview' } | { name: 'projects' } | { name: 'project'; id: string } | { name: 'add' }
+type View =
+  | { name: 'fleet' }
+  | { name: 'overview' }
+  | { name: 'projects' }
+  | { name: 'project'; id: string }
+  | { name: 'add' }
 
 function Content() {
   const { t } = useTranslation()
-  const { servers, snapshots, activeId, init, select, refreshServers, removeServer } = useAppStore()
+  const { servers, snapshots, activeId, init, select, setFocus, refreshServers, removeServer } = useAppStore()
   const [view, setView] = useState<View>({ name: 'overview' })
   const [removing, setRemoving] = useState(false)
   const [logsFor, setLogsFor] = useState<string | null>(null)
@@ -26,13 +31,37 @@ function Content() {
   useEffect(() => {
     let off = () => {}
     let stopped = false
-    void init().then((unsubscribe) => (stopped ? unsubscribe() : (off = unsubscribe)))
+    void init().then((unsubscribe) => {
+      if (stopped) {
+        unsubscribe()
+      } else {
+        off = unsubscribe
+        if (useAppStore.getState().servers.length > 1) {
+          setView({ name: 'fleet' })
+          setFocus({ kind: 'fleet' })
+        }
+      }
+    })
     void window.lookout.settings.getLanguage().then((language) => i18n.changeLanguage(language))
+    const offNav = window.lookout.app?.onNavigate?.((target) => {
+      if (target.serverId) {
+        select(target.serverId)
+        if (target.projectId) {
+          setView({ name: 'project', id: target.projectId })
+        } else {
+          setView({ name: 'overview' })
+        }
+      } else {
+        setView({ name: 'fleet' })
+        setFocus({ kind: 'fleet' })
+      }
+    })
     return () => {
       stopped = true
       off()
+      offNav?.()
     }
-  }, [init])
+  }, [init, select, setFocus])
 
   const entries = servers.map((s) => ({ id: s.id, name: s.name, status: snapshots[s.id]?.status ?? ('neutral' as const) }))
   const snapshot = activeId ? snapshots[activeId] : undefined
@@ -81,6 +110,12 @@ function Content() {
         <h1 className="text-2xl font-semibold">{t('app.name')}</h1>
         <p className="text-sm text-dim">{t('app.tagline')}</p>
         <p className="text-sm text-dim">{t('nav.welcome')}</p>
+      </div>
+    )
+  } else if (view.name === 'fleet') {
+    body = (
+      <div data-testid="fleet-view">
+        <h1 className="text-xl font-semibold mb-4">{t('tray.fleet')}</h1>
       </div>
     )
   } else if (!snapshot) {
