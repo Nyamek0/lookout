@@ -87,6 +87,10 @@ async function startDemo(): Promise<ReturnType<typeof createRuntime>> {
     name: 'Demo VPS', host: '127.0.0.1', port: 2222, user: 'demo', authType: 'password'
   })
   await runtime.services.secrets.set(server.id, 'demo')
+  const unreachableServer = runtime.services.serverStore.add({
+    name: 'Staging VPS', host: '127.0.0.1', port: 2223, user: 'demo', authType: 'password'
+  })
+  await runtime.services.secrets.set(unreachableServer.id, 'demo')
   return runtime
 }
 

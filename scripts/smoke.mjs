@@ -15,8 +15,11 @@ const args = [...(packaged ? [] : ['.']), `--remote-debugging-port=${port}`]
 // CI runners on Linux have no usable sandbox.
 if (process.platform === 'linux') args.push('--no-sandbox')
 
+const env = { ...process.env, LOOKOUT_DEMO: '1', ELECTRON_ENABLE_LOGGING: '1' }
+delete env.ELECTRON_RUN_AS_NODE
+
 const app = spawn(electronPath, args, {
-  env: { ...process.env, LOOKOUT_DEMO: '1', ELECTRON_ENABLE_LOGGING: '1' },
+  env,
   stdio: ['ignore', 'pipe', 'pipe']
 })
 let appLog = ''
@@ -77,7 +80,7 @@ try {
   const text = () => run('document.body.innerText')
   // `contains` is for rows whose button text carries more than the label (a project row also shows its RAM).
   const click = (label, { contains = false } = {}) =>
-    run(`(() => { const want = ${JSON.stringify(label)}; const b = [...document.querySelectorAll('button')].find((b) => (${contains} ? b.textContent.includes(want) : b.textContent.trim() === want) && !b.disabled); if (!b) return false; b.click(); return true })()`)
+    run(`(() => { const want = ${JSON.stringify(label)}; const b = [...document.querySelectorAll('button, [role=button]')].find((b) => (${contains} ? b.textContent.includes(want) : b.textContent.trim() === want) && !b.disabled); if (!b) return false; b.click(); return true })()`)
   async function until(description, check) {
     for (let i = 0; i < 160; i++) {
       const value = await check()
@@ -89,6 +92,11 @@ try {
 
   await until('the host key prompt', async () => (await text())?.includes('Trust this server?'))
   await until('the Trust button to be enabled', () => click('Trust'))
+  await until('the fleet overview screen with both servers', async () => {
+    const t = await text()
+    return t?.includes('Demo VPS') && t?.includes('Staging VPS')
+  })
+  await until('the Demo VPS card to open the server overview', () => click('Demo VPS', { contains: true }))
   await until('the home screen with live data', async () => {
     const t = await text()
     return t?.includes('Demo VPS') && /\d+ %/.test(t) && t.includes('WHO IS CONSUMING') && t.includes('backend')
@@ -104,7 +112,7 @@ try {
   if (failures.length) throw new Error(failures.join('\n'))
   failures.push('done')
   clearTimeout(watchdog)
-  finish(0, 'OK: host key prompt, live home screen, project page and restart confirmation all work')
+  finish(0, 'OK: host key prompt, fleet overview, live home screen, project page and restart confirmation all work')
 } catch (e) {
   clearTimeout(watchdog)
   finish(1, `FAIL: ${e.message}`)
