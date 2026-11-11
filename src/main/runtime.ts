@@ -231,6 +231,7 @@ export function createRuntime(o: {
       }
     },
     settings,
+    showTestNotification: () => notifier.notifyTest(),
     prompter,
     emit: o.send
   }

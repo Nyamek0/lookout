@@ -154,4 +154,12 @@ describe('App', () => {
     act(() => triggerNavigate({ serverId: 's1', projectId: 'compose:backend' }))
     expect(await screen.findByRole('button', { name: 'Restart' })).toBeInTheDocument()
   })
+
+  it('opens settings screen when clicking settings in sidebar', async () => {
+    render(<App />)
+    const settingsBtn = await screen.findByRole('button', { name: /settings/i })
+    await userEvent.click(settingsBtn)
+    expect(await screen.findByRole('heading', { name: /settings/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /test notification/i })).toBeInTheDocument()
+  })
 })

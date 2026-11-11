@@ -105,4 +105,25 @@ describe('Notifier', () => {
 
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ body: '2 issues' }))
   })
+
+  it('sends a test notification in the current language', () => {
+    const show = vi.fn()
+    const onNavigate = vi.fn()
+    const i18n = createMainI18n()
+    const notifier = new Notifier({
+      show,
+      t: (k, opts) => i18n.t(k, opts),
+      onNavigate,
+      getServerName: () => 'prod'
+    })
+
+    notifier.notifyTest()
+    expect(show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Lookout',
+        body: 'Notifications are working properly',
+        silent: false
+      })
+    )
+  })
 })

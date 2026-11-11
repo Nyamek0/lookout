@@ -7,6 +7,7 @@
     "servers": "Serveurs",
     "add": "Ajouter un serveur",
     "language": "Langue",
+    "settings": "Réglages",
     "empty": "Aucun serveur"
   },
   "status": {
@@ -162,7 +163,24 @@
     "mem": "Mémoire élevée ({{percent}} %)",
     "stopped": "Conteneur arrêté",
     "restarting": "Conteneur en redémarrage",
-    "unhealthy": "Conteneur non fonctionnel"
+    "unhealthy": "Conteneur non fonctionnel",
+    "testTitle": "Lookout",
+    "testBody": "Les notifications fonctionnent correctement"
+  },
+  "settings": {
+    "title": "Réglages",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "notificationsEnabled": "Activer les notifications",
+    "notificationsEnabledDesc": "Recevoir des notifications de bureau pour vos serveurs",
+    "warnings": "Avertissements",
+    "warningsDesc": "Notifier quand les métriques atteignent le seuil d'avertissement (orange)",
+    "recoveries": "Retours à la normale",
+    "recoveriesDesc": "Notifier quand un serveur ou projet redevient sain",
+    "testNotification": "Tester une notification",
+    "testNotificationSent": "Notification envoyée",
+    "keepInTray": "Garder dans la zone de notification à la fermeture",
+    "keepInTrayDesc": "À la fermeture de la fenêtre, garder lookout actif dans la zone de notification"
   },
   "fleet": {
     "allHealthy": "Tout va bien sur {{count}} serveurs",

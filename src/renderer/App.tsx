@@ -10,6 +10,7 @@ import { Fleet } from './screens/Fleet'
 import { Home } from './screens/Home'
 import { ProjectPage } from './screens/ProjectPage'
 import { Projects } from './screens/Projects'
+import { Settings } from './screens/Settings'
 import { fleetStatus } from '../shared/fleet'
 import { useAppStore } from './state/store'
 import { useRestart } from './state/useRestart'
@@ -20,6 +21,7 @@ type View =
   | { name: 'projects' }
   | { name: 'project'; id: string }
   | { name: 'add' }
+  | { name: 'settings' }
 
 function Content() {
   const { t } = useTranslation()
@@ -104,7 +106,9 @@ function Content() {
   )
 
   let body
-  if (view.name === 'add') {
+  if (view.name === 'settings') {
+    body = <Settings />
+  } else if (view.name === 'add') {
     body = <AddServer onDone={() => void added()} onCancel={() => setView({ name: 'overview' })} />
   } else if (servers.length === 0) {
     body = (
@@ -180,6 +184,7 @@ function Content() {
         servers={entries}
         activeId={activeId}
         isFleet={view.name === 'fleet'}
+        isSettings={view.name === 'settings'}
         fleetStatus={fleetStatus(servers, snapshots)}
         onSelectFleet={() => {
           setView({ name: 'fleet' })
@@ -187,6 +192,7 @@ function Content() {
         }}
         onSelect={choose}
         onAdd={() => setView({ name: 'add' })}
+        onOpenSettings={() => setView({ name: 'settings' })}
       >
         {restart.result && (
           <div

@@ -7,6 +7,7 @@
     "servers": "Servers",
     "add": "Add a server",
     "language": "Language",
+    "settings": "Settings",
     "empty": "No server yet"
   },
   "status": {
@@ -162,7 +163,24 @@
     "mem": "Memory high ({{percent}} %)",
     "stopped": "Container stopped",
     "restarting": "Container restarting",
-    "unhealthy": "Container unhealthy"
+    "unhealthy": "Container unhealthy",
+    "testTitle": "Lookout",
+    "testBody": "Notifications are working properly"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "notifications": "Notifications",
+    "notificationsEnabled": "Enable notifications",
+    "notificationsEnabledDesc": "Receive desktop notifications about your servers",
+    "warnings": "Warning alerts",
+    "warningsDesc": "Notify when metrics reach warning thresholds (orange)",
+    "recoveries": "Recovery alerts",
+    "recoveriesDesc": "Notify when a server or project returns to healthy status",
+    "testNotification": "Test notification",
+    "testNotificationSent": "Notification sent",
+    "keepInTray": "Keep in notification area on close",
+    "keepInTrayDesc": "When closing the window, keep lookout running in the taskbar notification area"
   },
   "fleet": {
     "allHealthy": "All servers are healthy ({{count}})",

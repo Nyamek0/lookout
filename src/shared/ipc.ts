@@ -60,6 +60,7 @@ export interface LookoutApi {
     update(patch: PreferencesPatch): Promise<Preferences>
     getLanguage(): Promise<'en' | 'fr'>
     setLanguage(language: 'en' | 'fr'): Promise<void>
+    testNotification(): Promise<void>
   }
   app: {
     onNavigate(cb: (target: { serverId: string; projectId?: string }) => void): Unsubscribe
@@ -86,7 +87,8 @@ export const INVOKE_CHANNELS = [
   'settings:get',
   'settings:update',
   'settings:getLanguage',
-  'settings:setLanguage'
+  'settings:setLanguage',
+  'settings:testNotification'
 ] as const
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]
 

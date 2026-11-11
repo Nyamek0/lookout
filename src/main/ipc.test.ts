@@ -222,6 +222,13 @@ describe('preferences over ipc', () => {
     await expect(handlers['settings:update']!(patch)).rejects.toThrow(TypeError)
     expect(await handlers['settings:get']!()).toEqual(DEFAULT_PREFERENCES)
   })
+
+  it('triggers a test notification via settings:testNotification', async () => {
+    let called = false
+    const { handlers } = setup({ showTestNotification: () => { called = true } })
+    await handlers['settings:testNotification']!()
+    expect(called).toBe(true)
+  })
 })
 
 describe('registerIpc', () => {

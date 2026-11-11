@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import type { Status } from '../../shared/types'
-import { LanguageSwitch } from './LanguageSwitch'
 import { StatusDot } from './StatusDot'
 
 export interface ServerEntry {
@@ -13,18 +12,22 @@ export function Sidebar({
   servers,
   activeId,
   isFleet,
+  isSettings,
   fleetStatus,
   onSelectFleet,
   onSelect,
-  onAdd
+  onAdd,
+  onOpenSettings
 }: {
   servers: ServerEntry[]
   activeId: string | null
   isFleet?: boolean
+  isSettings?: boolean
   fleetStatus?: Status
   onSelectFleet?: () => void
   onSelect: (id: string) => void
   onAdd: () => void
+  onOpenSettings?: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -49,10 +52,10 @@ export function Sidebar({
           <button
             key={s.id}
             type="button"
-            aria-current={!isFleet && s.id === activeId ? 'true' : undefined}
+            aria-current={!isFleet && !isSettings && s.id === activeId ? 'true' : undefined}
             onClick={() => onSelect(s.id)}
             className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-panel ${
-              !isFleet && s.id === activeId ? 'bg-panel text-fg' : 'text-dim'
+              !isFleet && !isSettings && s.id === activeId ? 'bg-panel text-fg' : 'text-dim'
             }`}
           >
             <StatusDot status={s.status} />
@@ -67,9 +70,20 @@ export function Sidebar({
       >
         {t('sidebar.add')}
       </button>
-      <div className="mt-3 border-t border-line pt-3">
-        <LanguageSwitch />
-      </div>
+      {onOpenSettings && (
+        <div className="mt-3 border-t border-line pt-3">
+          <button
+            type="button"
+            aria-current={isSettings ? 'true' : undefined}
+            onClick={onOpenSettings}
+            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-panel ${
+              isSettings ? 'bg-panel text-fg' : 'text-dim'
+            }`}
+          >
+            <span className="truncate">{t('sidebar.settings')}</span>
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

@@ -51,4 +51,23 @@ describe('Sidebar', () => {
     await userEvent.click(fleetBtn)
     expect(onSelectFleet).toHaveBeenCalled()
   })
+
+  it('navigates to settings when clicking the settings button', async () => {
+    const onOpenSettings = vi.fn()
+    render(
+      <Sidebar
+        servers={servers}
+        activeId="a"
+        isSettings={true}
+        onSelect={() => {}}
+        onAdd={() => {}}
+        onOpenSettings={onOpenSettings}
+      />
+    )
+    const settingsBtn = screen.getByRole('button', { name: /settings/i })
+    expect(settingsBtn).toBeInTheDocument()
+    expect(settingsBtn).toHaveAttribute('aria-current', 'true')
+    await userEvent.click(settingsBtn)
+    expect(onOpenSettings).toHaveBeenCalled()
+  })
 })

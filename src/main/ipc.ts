@@ -34,6 +34,7 @@ export interface IpcServices {
     getLanguage(): Promise<'en' | 'fr'>
     setLanguage(language: 'en' | 'fr'): Promise<void>
   }
+  showTestNotification?: () => void
   prompter: HostKeyPrompter
   emit(channel: string, payload: unknown): void
 }
@@ -197,7 +198,10 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
     'settings:get': async () => s.settings.get(),
     'settings:update': async (patch) => s.settings.update(preferencesPatch(patch)),
     'settings:getLanguage': async () => s.settings.getLanguage(),
-    'settings:setLanguage': async (language) => s.settings.setLanguage(language === 'fr' ? 'fr' : 'en')
+    'settings:setLanguage': async (language) => s.settings.setLanguage(language === 'fr' ? 'fr' : 'en'),
+    'settings:testNotification': async () => {
+      s.showTestNotification?.()
+    }
   }
 }
 

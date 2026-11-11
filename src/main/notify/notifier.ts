@@ -58,6 +58,17 @@ export class Notifier {
     this.o.show({ title, body, silent, onClick })
   }
 
+  notifyTest(): void {
+    this.o.show({
+      title: this.o.t('notify.testTitle'),
+      body: this.o.t('notify.testBody'),
+      silent: false,
+      onClick: () => {
+        this.o.onNavigate({ serverId: '' })
+      }
+    })
+  }
+
   private formatIssue(item: AlertItem): string {
     const issue = item.issue
     const kind = issue.kind
