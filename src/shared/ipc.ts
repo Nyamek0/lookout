@@ -1,4 +1,4 @@
-import type { LogChunk, PreparedAction, ServerConfig, Snapshot, SshHost } from './types'
+import type { LogChunk, Preferences, PreferencesPatch, PreparedAction, ServerConfig, Snapshot, SshHost } from './types'
 
 export interface NewServerInput extends Omit<ServerConfig, 'id'> {
   /** Passphrase or password: handed to the system keychain, never stored or sent back. */
@@ -54,6 +54,8 @@ export interface LookoutApi {
     confirm(actionId: string): Promise<{ ok: boolean; stderr: string }>
   }
   settings: {
+    get(): Promise<Preferences>
+    update(patch: PreferencesPatch): Promise<Preferences>
     getLanguage(): Promise<'en' | 'fr'>
     setLanguage(language: 'en' | 'fr'): Promise<void>
   }
@@ -74,6 +76,8 @@ export const INVOKE_CHANNELS = [
   'logs:unfollow',
   'actions:prepareRestart',
   'actions:confirm',
+  'settings:get',
+  'settings:update',
   'settings:getLanguage',
   'settings:setLanguage'
 ] as const

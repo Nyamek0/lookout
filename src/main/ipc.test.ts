@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '../shared/ipc'
-import type { ServerConfig } from '../shared/types'
+import { DEFAULT_PREFERENCES, type ServerConfig } from '../shared/types'
 import { ActionService } from './actions/actions'
 import { createHandlers, registerIpc, type IpcServices } from './ipc'
 import { LogFollows } from './logs/logs'
@@ -12,6 +12,7 @@ import type { Exec } from './ssh/connection'
 import { HostKeyPrompter } from './ssh/prompter'
 import { MemorySecretStore } from './store/secrets'
 import { ServerStore } from './store/serverStore'
+import { SettingsStore } from './store/settings'
 
 const ID = 'abcdef123456'
 
@@ -44,7 +45,7 @@ function setup(over: Partial<IpcServices> = {}) {
     actions: new ActionService(() => exec, () => new PathRegistry()),
     execFor: () => exec,
     readSshConfig: () => ({ text: 'Host vps\n  HostName 1.2.3.4\n  User root\n' }),
-    settings: { getLanguage: async () => 'en', setLanguage: async () => {} },
+    settings: new SettingsStore(join(mkdtempSync(join(tmpdir(), 'lookout-ipc-')), 'settings.json')),
     prompter: new HostKeyPrompter(() => {}),
     emit: (channel, payload) => events.push({ channel, payload }),
     ...over
@@ -172,6 +173,33 @@ describe('ipc handlers', () => {
     expect(events).toContainEqual({ channel: EVENT_CHANNELS.logLines, payload: { subId, lines: ['line one'] } })
     await handlers['logs:unfollow']!(subId)
     expect(stops).toEqual(['x'])
+  })
+})
+
+describe('preferences over ipc', () => {
+  it('returns the preferences and applies a partial update', async () => {
+    const { handlers } = setup()
+    expect(await handlers['settings:get']!()).toEqual(DEFAULT_PREFERENCES)
+    const next = await handlers['settings:update']!({ notifications: { warnings: true } })
+    expect(next).toEqual({ ...DEFAULT_PREFERENCES, notifications: { ...DEFAULT_PREFERENCES.notifications, warnings: true } })
+    expect(await handlers['settings:get']!()).toEqual(next)
+  })
+
+  it.each([
+    ['not an object', 'fr'],
+    ['an array', [true]],
+    ['null', null],
+    ['an unknown key', { theme: 'light' }],
+    ['a prototype key', JSON.parse('{"__proto__":{"keepInTray":false}}')],
+    ['a wrongly typed flag', { keepInTray: 'yes' }],
+    ['an unknown language', { language: 'klingon' }],
+    ['notifications that are not an object', { notifications: true }],
+    ['an unknown notification key', { notifications: { sound: true } }],
+    ['a wrongly typed notification flag', { notifications: { enabled: 1 } }]
+  ])('refuses %s and changes nothing', async (_label, patch) => {
+    const { handlers } = setup()
+    await expect(handlers['settings:update']!(patch)).rejects.toThrow(TypeError)
+    expect(await handlers['settings:get']!()).toEqual(DEFAULT_PREFERENCES)
   })
 })
 

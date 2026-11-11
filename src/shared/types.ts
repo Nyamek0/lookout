@@ -118,3 +118,31 @@ export interface Snapshot {
   /** Set when the server is unreachable: what went wrong, in the library's own words. */
   error?: { kind: ConnectErrorKind; message: string }
 }
+
+/** What the user can tune. Saved in settings.json (never a secret). */
+export interface Preferences {
+  language: 'en' | 'fr'
+  notifications: {
+    /** Desktop notifications at all. */
+    enabled: boolean
+    /** Also notify when something turns orange, not only red. */
+    warnings: boolean
+    /** Say so when something is back to normal. */
+    recoveries: boolean
+  }
+  /** Windows: closing the window keeps the app running next to the clock instead of quitting. */
+  keepInTray: boolean
+}
+
+export const DEFAULT_PREFERENCES: Preferences = {
+  language: 'en',
+  notifications: { enabled: true, warnings: false, recoveries: true },
+  keepInTray: true
+}
+
+/** An update to the preferences: any subset, notifications included. */
+export interface PreferencesPatch {
+  language?: Preferences['language']
+  notifications?: Partial<Preferences['notifications']>
+  keepInTray?: boolean
+}

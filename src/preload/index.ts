@@ -62,6 +62,8 @@ const api: LookoutApi = {
     confirm: (actionId) => invoke('actions:confirm', actionId)
   },
   settings: {
+    get: () => invoke('settings:get'),
+    update: (patch) => invoke('settings:update', patch),
     getLanguage: () => invoke('settings:getLanguage'),
     setLanguage: (language) => invoke('settings:setLanguage', language)
   }
