@@ -232,4 +232,39 @@ describe('ServerMonitor polling', () => {
     await vi.advanceTimersByTimeAsync(60000)
     expect(statCalls(exec)).toBe(3)
   })
+
+  it('switches between foreground, fleet, and background modes, refreshing immediately when moving faster', async () => {
+    const exec = fakeExec()
+    const m = make(exec, { intervals: { activeMs: 5000, fleetMs: 15000, backgroundMs: 45000 } })
+    expect(m.latest()).toBeNull()
+
+    m.start() // starts in background mode
+    await vi.advanceTimersByTimeAsync(0)
+    expect(statCalls(exec)).toBe(1)
+    expect(m.latest()?.serverId).toBe('s1')
+
+    // In background mode, waiting 15s should NOT trigger a poll (waits 45s)
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(statCalls(exec)).toBe(1)
+
+    // Switching to fleet mode (faster) triggers immediate refresh
+    m.setMode('fleet')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(statCalls(exec)).toBe(2)
+
+    // Fleet mode polls every 15s
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(statCalls(exec)).toBe(3)
+
+    // Switching to foreground mode (faster) triggers immediate refresh
+    m.setMode('foreground')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(statCalls(exec)).toBe(4)
+
+    // Foreground mode polls every 5s
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(statCalls(exec)).toBe(5)
+
+    m.stop()
+  })
 })

@@ -128,6 +128,8 @@ export function createRuntime(o: {
         execs.delete(id)
       },
       setActiveServer: (id) => manager.setActiveServer(id),
+      setFocus: (focus) => manager.setFocus(focus),
+      latest: () => manager.latest(),
       retry: (id) => manager.retry(id)
     },
     follows,

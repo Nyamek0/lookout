@@ -102,6 +102,13 @@ export interface ServerConfig {
 /** Why a server could not be reached: it decides whether we keep retrying or wait for the user. */
 export type ConnectErrorKind = 'auth' | 'hostkey-refused' | 'hostkey-changed' | 'network' | 'other'
 
+export type MonitorMode = 'foreground' | 'fleet' | 'background'
+
+export type MonitorFocus =
+  | { kind: 'server'; id: string }
+  | { kind: 'fleet' }
+  | { kind: 'none' }
+
 export type SnapshotWarning = 'docker_unavailable' | 'proxy_unavailable' | 'permission_denied'
 
 export interface Snapshot {

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '../shared/ipc'
-import { DEFAULT_PREFERENCES, type ServerConfig } from '../shared/types'
+import { DEFAULT_PREFERENCES, type MonitorFocus, type ServerConfig, type Snapshot } from '../shared/types'
 import { ActionService } from './actions/actions'
 import { createHandlers, registerIpc, type IpcServices } from './ipc'
 import { LogFollows } from './logs/logs'
@@ -22,6 +22,7 @@ function setup(over: Partial<IpcServices> = {}) {
   const added: ServerConfig[] = []
   const removed: string[] = []
   const active: string[] = []
+  const focused: MonitorFocus[] = []
   const events: { channel: string; payload: unknown }[] = []
   const stops: string[] = []
   const retried: string[] = []
@@ -37,7 +38,9 @@ function setup(over: Partial<IpcServices> = {}) {
     manager: {
       add: (s) => added.push(s),
       remove: (id) => removed.push(id),
+      setFocus: (f) => focused.push(f),
       setActiveServer: (id) => active.push(id),
+      latest: () => [{ serverId: 's1' } as Snapshot],
       retry: (id) => retried.push(id)
     },
     follows,
@@ -50,7 +53,7 @@ function setup(over: Partial<IpcServices> = {}) {
     emit: (channel, payload) => events.push({ channel, payload }),
     ...over
   }
-  return { handlers: createHandlers(services), services, secrets, file, added, removed, active, events, stops, retried, forgotten, follows }
+  return { handlers: createHandlers(services), services, secrets, file, added, removed, active, focused, events, stops, retried, forgotten, follows }
 }
 
 describe('ipc handlers', () => {
@@ -132,6 +135,24 @@ describe('ipc handlers', () => {
     const { handlers, active } = setup()
     await handlers['monitor:setActive']!('s1')
     expect(active).toEqual(['s1'])
+  })
+
+  it('updates monitor focus and rejects invalid focus', async () => {
+    const { handlers, focused } = setup()
+    await handlers['monitor:setFocus']!({ kind: 'fleet' })
+    expect(focused).toEqual([{ kind: 'fleet' }])
+    await handlers['monitor:setFocus']!({ kind: 'server', id: 's1' })
+    expect(focused).toEqual([{ kind: 'fleet' }, { kind: 'server', id: 's1' }])
+
+    await expect(handlers['monitor:setFocus']!(null)).rejects.toThrow(TypeError)
+    await expect(handlers['monitor:setFocus']!({ kind: 'other' })).rejects.toThrow(TypeError)
+    await expect(handlers['monitor:setFocus']!({ kind: 'server' })).rejects.toThrow(TypeError)
+    await expect(handlers['monitor:setFocus']!({ kind: 'server', id: '' })).rejects.toThrow(TypeError)
+  })
+
+  it('returns latest snapshots over ipc', async () => {
+    const { handlers } = setup()
+    expect(await handlers['monitor:latest']!()).toEqual([{ serverId: 's1' }])
   })
 
   it('answers confirm for an unknown action with ok:false instead of throwing', async () => {

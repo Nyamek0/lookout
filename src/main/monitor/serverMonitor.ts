@@ -6,6 +6,7 @@ import type {
   DomainCheck,
   GitInfo,
   HostMetrics,
+  MonitorMode,
   Snapshot,
   SnapshotWarning
 } from '../../shared/types'
@@ -33,7 +34,7 @@ export interface MonitorOptions {
   serverIp: string
   deps: DomainDeps
   providers?: ProxyProvider[]
-  intervals?: { activeMs: number; backgroundMs: number }
+  intervals?: { activeMs?: number; fleetMs?: number; backgroundMs?: number }
 }
 
 const GIT_TTL_MS = 300_000
@@ -42,11 +43,13 @@ const DISK_TTL_MS = 60_000
 const HISTORY_POINTS = 60
 const MAX_DOMAINS = 50 // hostnames come from the server's proxy config: bound how many we probe
 
+const MODE_RANK: Record<MonitorMode, number> = { foreground: 0, fleet: 1, background: 2 }
+
 type DiskInfo = ReturnType<typeof parseDockerSystemDf>
 
 export class ServerMonitor extends EventEmitter {
   readonly paths = new PathRegistry()
-  private readonly intervals: { activeMs: number; backgroundMs: number }
+  private readonly intervals: { activeMs: number; fleetMs: number; backgroundMs: number }
   private readonly providers: ProxyProvider[]
   private readonly cpuHistory = new History(HISTORY_POINTS)
   private readonly memHistory = new History(HISTORY_POINTS)
@@ -58,7 +61,7 @@ export class ServerMonitor extends EventEmitter {
   private inflight: Promise<Snapshot> | null = null
   private timer: ReturnType<typeof setTimeout> | null = null
   private running = false
-  private active = false
+  private mode: MonitorMode = 'background'
   private failures = 0
   private paused = false
 
@@ -67,7 +70,11 @@ export class ServerMonitor extends EventEmitter {
   constructor(private readonly o: MonitorOptions) {
     super()
     this.serverIp = o.serverIp
-    this.intervals = o.intervals ?? { activeMs: 5000, backgroundMs: 45000 }
+    this.intervals = {
+      activeMs: o.intervals?.activeMs ?? 5000,
+      fleetMs: o.intervals?.fleetMs ?? 15000,
+      backgroundMs: o.intervals?.backgroundMs ?? 45000
+    }
     this.providers = o.providers ?? proxyProviders
   }
 
@@ -83,11 +90,21 @@ export class ServerMonitor extends EventEmitter {
     this.timer = null
   }
 
+  setMode(mode: MonitorMode): void {
+    if (this.mode === mode) return
+    const faster = MODE_RANK[mode] < MODE_RANK[this.mode]
+    this.mode = mode
+    if (this.running && !this.paused) {
+      this.schedule(faster ? 0 : this.baseInterval())
+    }
+  }
+
   setActive(active: boolean): void {
-    if (this.active === active) return
-    this.active = active
-    // Restart the countdown so a newly selected server refreshes right away at the fast rate.
-    if (this.running && !this.paused) this.schedule(active ? 0 : this.intervals.backgroundMs)
+    this.setMode(active ? 'foreground' : 'background')
+  }
+
+  latest(): Snapshot | null {
+    return this.last
   }
 
   /** After a failed login or a refused/changed host key polling stops; this tries again now (the user acted). */
@@ -110,6 +127,17 @@ export class ServerMonitor extends EventEmitter {
     return this.inflight
   }
 
+  private baseInterval(): number {
+    switch (this.mode) {
+      case 'foreground':
+        return this.intervals.activeMs
+      case 'fleet':
+        return this.intervals.fleetMs
+      case 'background':
+        return this.intervals.backgroundMs
+    }
+  }
+
   private schedule(delayMs: number): void {
     if (this.timer) clearTimeout(this.timer)
     this.timer = setTimeout(() => {
@@ -123,7 +151,7 @@ export class ServerMonitor extends EventEmitter {
   /** Normal rate when healthy; doubling (up to 5 min) while unreachable; none while waiting for the user. */
   private nextDelay(): number | null {
     if (this.paused) return null
-    const base = this.active ? this.intervals.activeMs : this.intervals.backgroundMs
+    const base = this.baseInterval()
     if (this.failures === 0) return base
     return Math.min(base * 2 ** Math.min(this.failures - 1, 6), 300_000)
   }

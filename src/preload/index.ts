@@ -26,6 +26,8 @@ const api: LookoutApi = {
   },
   monitor: {
     onSnapshot: (cb) => on<Snapshot>(EVENT_CHANNELS.snapshot, cb),
+    setFocus: (focus) => invoke('monitor:setFocus', focus),
+    latest: () => invoke('monitor:latest'),
     setActive: (serverId) => invoke('monitor:setActive', serverId),
     retry: (serverId) => invoke('monitor:retry', serverId)
   },

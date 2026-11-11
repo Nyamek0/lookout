@@ -1,4 +1,4 @@
-import type { LogChunk, Preferences, PreferencesPatch, PreparedAction, ServerConfig, Snapshot, SshHost } from './types'
+import type { LogChunk, MonitorFocus, Preferences, PreferencesPatch, PreparedAction, ServerConfig, Snapshot, SshHost } from './types'
 
 export interface NewServerInput extends Omit<ServerConfig, 'id'> {
   /** Passphrase or password: handed to the system keychain, never stored or sent back. */
@@ -29,6 +29,8 @@ export interface LookoutApi {
   }
   monitor: {
     onSnapshot(cb: (snapshot: Snapshot) => void): Unsubscribe
+    setFocus(focus: MonitorFocus): Promise<void>
+    latest(): Promise<Snapshot[]>
     setActive(serverId: string): Promise<void>
     /** Polling pauses after a failed login or a refused/changed host key: this resumes it now. */
     retry(serverId: string): Promise<void>
@@ -67,6 +69,8 @@ export const INVOKE_CHANNELS = [
   'servers:add',
   'servers:remove',
   'servers:importSshConfig',
+  'monitor:setFocus',
+  'monitor:latest',
   'monitor:setActive',
   'monitor:retry',
   'hostKey:answer',

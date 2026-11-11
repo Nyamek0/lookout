@@ -1,27 +1,37 @@
 import { EventEmitter } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
-import type { ServerConfig, Snapshot } from '../../shared/types'
+import type { MonitorMode, ServerConfig, Snapshot } from '../../shared/types'
 import { MonitorManager } from './manager'
 import type { ServerMonitor } from './serverMonitor'
 
 const server = (id: string): ServerConfig => ({ id, name: id, host: '1.1.1.1', port: 22, user: 'root', authType: 'agent' })
 
 class FakeMonitor extends EventEmitter {
+  mode: MonitorMode = 'background'
   active: boolean | null = null
   started = false
   stopped = false
   retried = 0
+  snapshot: Snapshot | null = null
+
   retry() {
     this.retried++
   }
+  setMode(m: MonitorMode) {
+    this.mode = m
+    this.active = m === 'foreground'
+  }
   setActive(a: boolean) {
-    this.active = a
+    this.setMode(a ? 'foreground' : 'background')
   }
   start() {
     this.started = true
   }
   stop() {
     this.stopped = true
+  }
+  latest(): Snapshot | null {
+    return this.snapshot
   }
 }
 
@@ -73,5 +83,41 @@ describe('MonitorManager', () => {
     const snap = { serverId: 'a' } as Snapshot
     fake.emit('snapshot', snap)
     expect(cb).toHaveBeenCalledWith(snap)
+  })
+
+  it('switches modes based on focus: fleet, server, and none', () => {
+    const monitors = new Map<string, FakeMonitor>()
+    const manager = new MonitorManager((s) => {
+      const m = new FakeMonitor()
+      monitors.set(s.id, m)
+      return m as unknown as ServerMonitor
+    })
+    manager.startAll([server('a'), server('b')])
+
+    manager.setFocus({ kind: 'fleet' })
+    expect(monitors.get('a')!.mode).toBe('fleet')
+    expect(monitors.get('b')!.mode).toBe('fleet')
+
+    manager.setFocus({ kind: 'server', id: 'a' })
+    expect(monitors.get('a')!.mode).toBe('foreground')
+    expect(monitors.get('b')!.mode).toBe('background')
+
+    manager.setFocus({ kind: 'none' })
+    expect(monitors.get('a')!.mode).toBe('background')
+    expect(monitors.get('b')!.mode).toBe('background')
+  })
+
+  it('collects latest snapshots from monitors', () => {
+    const monitors = new Map<string, FakeMonitor>()
+    const manager = new MonitorManager((s) => {
+      const m = new FakeMonitor()
+      monitors.set(s.id, m)
+      return m as unknown as ServerMonitor
+    })
+    manager.startAll([server('a'), server('b')])
+    expect(manager.latest()).toEqual([])
+
+    monitors.get('a')!.snapshot = { serverId: 'a' } as Snapshot
+    expect(manager.latest()).toEqual([{ serverId: 'a' }])
   })
 })

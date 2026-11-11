@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { IpcMain } from 'electron'
 import { EVENT_CHANNELS, INVOKE_CHANNELS, type InvokeChannel, type NewServerInput } from '../shared/ipc'
-import type { Preferences, PreferencesPatch, ServerConfig } from '../shared/types'
+import type { MonitorFocus, Preferences, PreferencesPatch, ServerConfig, Snapshot } from '../shared/types'
 import type { ActionService } from './actions/actions'
 import { fetchLogs, followLogs, type LogFollows } from './logs/logs'
 import type { Exec } from './ssh/connection'
@@ -16,7 +16,9 @@ export interface IpcServices {
   manager: {
     add(server: ServerConfig): void
     remove(serverId: string): void
+    setFocus(focus: MonitorFocus): void
     setActiveServer(serverId: string): void
+    latest(): Snapshot[]
     retry(serverId: string): void
   }
   /** Open live log subscriptions, closed when their server goes away or the window reloads. */
@@ -46,6 +48,23 @@ const strings = (v: unknown, name: string): string[] => {
   if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) throw new TypeError(`${name} must be an array of strings`)
   return v as string[]
 }
+function monitorFocus(v: unknown): MonitorFocus {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    throw new TypeError('focus must be an object')
+  }
+  const o = v as Record<string, unknown>
+  if (o['kind'] === 'server') {
+    return { kind: 'server', id: str(o['id'], 'id') }
+  }
+  if (o['kind'] === 'fleet') {
+    return { kind: 'fleet' }
+  }
+  if (o['kind'] === 'none') {
+    return { kind: 'none' }
+  }
+  throw new TypeError('invalid focus kind')
+}
+
 const AUTH_TYPES = ['agent', 'key', 'password']
 
 
@@ -136,6 +155,8 @@ export function createHandlers(s: IpcServices): Record<InvokeChannel, Handler> {
       const { text, include } = s.readSshConfig()
       return parseSshConfig(text, include)
     },
+    'monitor:setFocus': async (focus) => s.manager.setFocus(monitorFocus(focus)),
+    'monitor:latest': async () => s.manager.latest(),
     'monitor:setActive': async (id) => s.manager.setActiveServer(str(id, 'serverId')),
     'monitor:retry': async (id) => s.manager.retry(str(id, 'serverId')),
     'hostKey:answer': async (promptId, accept) => s.prompter.answer(str(promptId, 'promptId'), accept === true),

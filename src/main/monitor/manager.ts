@@ -1,4 +1,4 @@
-import type { ServerConfig, Snapshot } from '../../shared/types'
+import type { MonitorFocus, ServerConfig, Snapshot } from '../../shared/types'
 import type { ServerMonitor } from './serverMonitor'
 
 type Listener = (snapshot: Snapshot) => void
@@ -7,7 +7,7 @@ type Listener = (snapshot: Snapshot) => void
 export class MonitorManager {
   private readonly monitors = new Map<string, ServerMonitor>()
   private readonly listeners = new Set<Listener>()
-  private activeId: string | null = null
+  private focus: MonitorFocus = { kind: 'none' }
 
   constructor(private readonly factory: (server: ServerConfig) => ServerMonitor) {}
 
@@ -25,7 +25,7 @@ export class MonitorManager {
     const monitor = this.factory(server)
     monitor.on('snapshot', (s: Snapshot) => this.listeners.forEach((cb) => cb(s)))
     this.monitors.set(server.id, monitor)
-    monitor.setActive(server.id === this.activeId) // the interface may have chosen before this monitor existed
+    this.applyFocusToMonitor(server.id, monitor)
     monitor.start()
   }
 
@@ -42,9 +42,34 @@ export class MonitorManager {
     return this.monitors.get(serverId)
   }
 
+  setFocus(focus: MonitorFocus): void {
+    this.focus = focus
+    for (const [id, monitor] of this.monitors) {
+      this.applyFocusToMonitor(id, monitor)
+    }
+  }
+
   setActiveServer(serverId: string): void {
-    this.activeId = serverId
-    for (const [id, monitor] of this.monitors) monitor.setActive(id === serverId)
+    this.setFocus({ kind: 'server', id: serverId })
+  }
+
+  latest(): Snapshot[] {
+    const list: Snapshot[] = []
+    for (const monitor of this.monitors.values()) {
+      const snap = monitor.latest()
+      if (snap) list.push(snap)
+    }
+    return list
+  }
+
+  private applyFocusToMonitor(id: string, monitor: ServerMonitor): void {
+    if (this.focus.kind === 'server') {
+      monitor.setMode(id === this.focus.id ? 'foreground' : 'background')
+    } else if (this.focus.kind === 'fleet') {
+      monitor.setMode('fleet')
+    } else {
+      monitor.setMode('background')
+    }
   }
 
   stopAll(): void {
