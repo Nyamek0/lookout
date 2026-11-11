@@ -140,5 +140,28 @@
     "expected": "Attendue",
     "received": "Reçue",
     "close": "Fermer"
+  },
+  "tray": {
+    "open": "Ouvrir {{appName}}",
+    "fleet": "Tous les serveurs",
+    "quit": "Quitter {{appName}}",
+    "noServers": "Aucun serveur configuré",
+    "allOk": "Tous les serveurs sont opérationnels",
+    "issues_one": "{{count}} problème",
+    "issues_other": "{{count}} problèmes"
+  },
+  "notify": {
+    "errorTitle": "{{server}} : {{project}} est en panne",
+    "serverErrorTitle": "{{server}} est injoignable",
+    "warnTitle": "{{server}} : avertissement sur {{project}}",
+    "recoveredTitle": "{{server}} : {{project}} est revenu à la normale",
+    "actionRequired": "Action requise",
+    "issues_one": "{{count}} problème",
+    "issues_other": "{{count}} problèmes",
+    "cpu": "CPU élevé ({{percent}} %)",
+    "mem": "Mémoire élevée ({{percent}} %)",
+    "stopped": "Conteneur arrêté",
+    "restarting": "Conteneur en redémarrage",
+    "unhealthy": "Conteneur non fonctionnel"
   }
 }

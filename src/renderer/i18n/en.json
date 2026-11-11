@@ -140,5 +140,28 @@
     "expected": "Expected",
     "received": "Received",
     "close": "Close"
+  },
+  "tray": {
+    "open": "Open {{appName}}",
+    "fleet": "All servers",
+    "quit": "Quit {{appName}}",
+    "noServers": "No server configured",
+    "allOk": "All servers are healthy",
+    "issues_one": "{{count}} issue",
+    "issues_other": "{{count}} issues"
+  },
+  "notify": {
+    "errorTitle": "{{server}}: {{project}} is down",
+    "serverErrorTitle": "{{server}} is unreachable",
+    "warnTitle": "{{server}}: warning on {{project}}",
+    "recoveredTitle": "{{server}}: {{project}} is back to normal",
+    "actionRequired": "Action required",
+    "issues_one": "{{count}} issue",
+    "issues_other": "{{count}} issues",
+    "cpu": "CPU high ({{percent}} %)",
+    "mem": "Memory high ({{percent}} %)",
+    "stopped": "Container stopped",
+    "restarting": "Container restarting",
+    "unhealthy": "Container unhealthy"
   }
 }
