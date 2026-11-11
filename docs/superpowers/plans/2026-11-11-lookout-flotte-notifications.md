@@ -1,6 +1,6 @@
 # lookout : vue multi-serveurs, barre de menus et notifications (plan)
 
-Date : 2026-11-11. Statut : **validé**. Base : `main` @ `107f198` (v0.1.1).
+Date : 2026-11-11. Statut : **terminé**. Base : `main` @ `107f198` (v0.1.1).
 
 ## 1. Intention
 
